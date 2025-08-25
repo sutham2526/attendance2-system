@@ -1,714 +1,270 @@
 <!DOCTYPE html>
 <html lang="th">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>🎓 Classroom Dashboard</title>
+  <meta charset="UTF-8">
+  <title>📘 ระบบเช็คชื่อเข้าเรียน</title>
+  <link href="https://fonts.googleapis.com/css2?family=Sarabun&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    body {
+      font-family: 'Sarabun', sans-serif;
+      background: #f5f7fa;
+      margin: 0;
+      padding: 20px;
+    }
+    h2 { text-align:center; margin-bottom:20px; color:#2c3e50; }
 
-<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;600;700&display=swap" rel="stylesheet">
-<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    /* ปุ่มเมนูหลัก */
+    .menu-bar { display:flex; justify-content:center; gap:15px; margin-bottom:20px; }
+    .menu-bar button {
+      padding:15px 25px; font-size:18px; font-weight:bold;
+      border:none; border-radius:12px; cursor:pointer; color:#fff;
+      transition:0.3s;
+    }
+    .menu-bar button:nth-child(1){ background:linear-gradient(45deg,#27ae60,#2ecc71); }
+    .menu-bar button:nth-child(2){ background:linear-gradient(45deg,#2980b9,#3498db); }
+    .menu-bar button:nth-child(3){ background:linear-gradient(45deg,#8e44ad,#9b59b6); }
+    .menu-bar button:nth-child(4){ background:linear-gradient(45deg,#e67e22,#f39c12); }
+    .menu-bar button:hover{ transform:scale(1.05); }
 
-<style>
-:root{--bg:#f3f6fb;--card:#fff;--ink:#222;--muted:#6b7280;--grad:linear-gradient(90deg,#6a5acd,#00c6ff);
---green:#27ae60;--red:#c0392b;--yellow:#f1c40f;--purple:#8e44ad;--orange:#e67e22;--amber:#f39c12;--radius:16px;}
-body{font-family:'Sarabun',sans-serif;margin:0;background:var(--bg);color:var(--ink);}
-header{background:var(--grad); color:#fff; padding:18px 20px; text-align:center; box-shadow:0 6px 20px rgba(0,0,0,.15);}
-header .title{font-size:22px;font-weight:700;}
-.topbar{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;padding:14px 12px;background:#fff;position:sticky;top:0;z-index:5;box-shadow:0 2px 10px rgba(0,0,0,.06);}
-.btn{border:0;padding:10px 16px;border-radius:12px;cursor:pointer;font-weight:600;background:var(--grad);color:#fff;transition:.2s;box-shadow:0 4px 10px rgba(0,0,0,.12);}
-.btn.secondary{background:#eef2ff;color:#3b82f6;box-shadow:none;}
-.btn.warn{background:#ffe8e8;color:#e11d48;}
-.btn:hover{filter:brightness(.95);transform:translateY(-1px);}
-.container{max-width:1200px;margin:20px auto;padding:0 16px;}
-section{display:none;} section.active{display:block;}
-.card{background:var(--card);border-radius:var(--radius);padding:20px;margin-bottom:18px;box-shadow:0 8px 24px rgba(0,0,0,.08);}
-.card h3{margin:0 0 12px 0;}
-.row{display:flex;gap:12px;flex-wrap:wrap;align-items:center;}
-input[type="text"],input[type="number"],input[type="date"],select{padding:10px 12px;border-radius:12px;border:1px solid #e5e7eb;background:#fff;min-width:180px;font-size:16px;}
-input[type="file"]{border:1px dashed #cbd5e1;padding:10px;border-radius:12px;background:#f8fafc;}
-label{color:var(--muted);font-weight:600;margin-right:6px;}
-.table-wrap{overflow:auto;border-radius:14px;box-shadow:0 3px 12px rgba(0,0,0,.06);}
-table{width:100%;border-collapse:separate;border-spacing:0;background:#fff;}
-th,td{padding:10px 12px;text-align:left;border-bottom:1px solid #f1f5f9;}
-th{background:#f8fafc;color:#334155;position:sticky;top:0;z-index:1;}
-tr:nth-child(even) td{background:#fcfdff;}
-.badge{padding:6px 10px;background:#eef2ff;color:#4f46e5;border-radius:999px;font-size:12px;font-weight:700;}
-.status-btn{display:inline-grid;place-items:center;width:36px;height:36px;border-radius:50%;color:#fff;font-weight:800;margin-right:6px;opacity:.35;cursor:pointer;border:2px solid transparent;transition:.15s;}
-.status-btn:hover{transform:scale(1.03)}
-.status-btn.active{opacity:1;box-shadow:0 0 0 3px rgba(0,0,0,.06);}
-.มา{background:var(--green)}
-.ขาด{background:var(--red)}
-.สาย{background:var(--yellow);color:#111}
-.ลากิจ{background:var(--purple)}
-.ลาป่วย{background:var(--orange)}
-.กิจกรรม{background:var(--amber);color:#111}
-.subtabs{display:flex;gap:8px;margin-bottom:12px;}
-.subtabs .tab{padding:8px 12px;border-radius:10px;background:#eef2ff;color:#334155;cursor:pointer;font-weight:600;}
-.subtabs .tab.active{background:var(--grad);color:#fff;}
-.preview-table{max-height:50vh;overflow:auto;text-align:left;}
-.preview-table table{min-width:520px;}
-.footer-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:10px;}
-.note{color:#64748b;font-size:12px;}
-.kpi{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;}
-.kpi .card{display:flex;align-items:center;gap:12px;}
-.kpi .dot{width:14px;height:14px;border-radius:50%;}
-</style>
+    /* กล่องเมนู */
+    .menu {
+      display:none; padding:20px; background:#fff; border-radius:16px;
+      box-shadow:0 4px 10px rgba(0,0,0,0.1); margin-bottom:20px;
+    }
+
+    /* ปุ่มสถานะ */
+    .status-btn {
+      display:inline-block; margin:3px; padding:10px 14px; border-radius:50%;
+      color:#fff; cursor:pointer; font-weight:bold; opacity:0.4;
+    }
+    .status-btn.active { opacity:1; }
+    .มา { background:#27ae60; }
+    .ขาด { background:#c0392b; }
+    .ลากิจ { background:#8e44ad; }
+    .ลาป่วย { background:#e67e22; }
+    .กิจกรรม { background:#f1c40f; color:#000; }
+
+    /* ฟอร์มเลือก */
+    select, input[type=date], button.action {
+      font-family:'Sarabun',sans-serif; font-size:18px; padding:6px 10px;
+      margin:5px; border-radius:8px; border:1px solid #ccc;
+    }
+    button.action {
+      background:linear-gradient(45deg,#16a085,#1abc9c); color:#fff;
+      font-weight:bold; border:none; cursor:pointer; transition:0.2s;
+    }
+    button.action:hover { transform:scale(1.05); }
+
+    /* ตาราง */
+    table {
+      width:100%; border-collapse:collapse; margin-top:15px;
+    }
+    th, td {
+      border:1px solid #ddd; padding:10px; text-align:center;
+      font-size:16px;
+    }
+    th { background:#3498db; color:#fff; }
+    tr:nth-child(even){ background:#f9f9f9; }
+    tr:hover{ background:#ecf0f1; }
+
+    .card {
+      padding:15px; border-radius:12px; background:#fff;
+      box-shadow:0 2px 8px rgba(0,0,0,0.1); margin-bottom:15px;
+    }
+  </style>
 </head>
 <body>
 
-<header>
-  <div class="title">🎓 ระบบเช็คชื่อเข้าเรียน — Classroom Dashboard</div>
-</header>
+  <h2>📘 ระบบเช็คชื่อเข้าเรียน</h2>
 
-<div class="topbar">
-  <button class="btn" onclick="openSection('attendance')">บันทึกการเข้าเรียน</button>
-  <button class="btn" onclick="openSection('manage')">จัดการข้อมูล</button>
-  <button class="btn" onclick="openSection('history')">ประวัติ & รายงาน</button>
-  <button class="btn" onclick="openSection('export')">Export</button>
-</div>
+  <!-- เมนูหลัก -->
+  <div class="menu-bar">
+    <button onclick="showTab('menu1')">บันทึกการเข้าเรียน</button>
+    <button onclick="showTab('menu2')">จัดการข้อมูล</button>
+    <button onclick="showTab('menu3')">ประวัติการเข้าเรียน</button>
+    <button onclick="showTab('menu4')">รายงานสรุปผล</button>
+  </div>
 
-<div class="container">
-
-  <!-- Attendance -->
-  <section id="attendance" class="active">
+  <!-- เมนู 1 -->
+  <div id="menu1" class="menu">
+    <h3>บันทึกการเข้าเรียน</h3>
     <div class="card">
-      <h3>📌 บันทึกการเข้าเรียน</h3>
-      <div class="row">
-        <div>
-          <label>วันที่</label><br/>
-          <input type="date" id="attDate" />
-        </div>
-        <div>
-          <label>ห้องเรียน</label><br/>
-          <select id="attRoom"></select>
-        </div>
-        <div>
-          <label>รายวิชา</label><br/>
-          <select id="attSubject"></select>
-        </div>
-        <div>
-          <br/>
-          <button class="btn" id="loadAttBtn" onclick="loadStudentsForAttendance()">โหลดรายชื่อ</button>
-        </div>
-      </div>
+      <label>วันที่: </label>
+      <input type="date" id="dateInput">
+      <label>ห้อง: </label>
+      <select id="roomSelect" onchange="resetAttendance()"></select>
+      <label>วิชา: </label>
+      <select id="subjectSelect" onchange="resetAttendance()"></select>
+      <button class="action" onclick="checkAndLoadStudents()">โหลดรายชื่อ</button>
+    </div>
+    <div id="studentList"></div>
+    <button class="action" onclick="saveAttendance()">💾 บันทึก</button>
+  </div>
+
+  <!-- เมนู 2 -->
+  <div id="menu2" class="menu">
+    <h3>จัดการข้อมูล</h3>
+    <div class="card">
+      <h4>ห้องเรียน</h4>
+      <input type="text" id="newRoom" placeholder="เพิ่มห้องเรียนใหม่">
+      <button class="action">➕ เพิ่ม</button>
+      <input type="file" id="excelUpload" accept=".xlsx,.xls">
+      <button class="action" onclick="importExcel()">📥 นำเข้าจาก Excel</button>
+      <div id="roomManage"></div>
     </div>
     <div class="card">
-      <div class="row" style="justify-content:space-between; align-items:center">
-        <h3 style="margin:0">รายชื่อนักเรียน</h3>
-        <span class="badge" id="attCount">—</span>
-      </div>
-      <div class="table-wrap" id="attTableWrap">
-        <table id="attTable">
-          <thead>
-            <tr>
-              <th style="width:80px">เลขที่</th>
-              <th style="width:140px">เลขประจำตัว</th>
-              <th>ชื่อ-สกุล</th>
-              <th style="min-width:320px">สถานะ (คลิกเลือก)</th>
-            </tr>
-          </thead>
-          <tbody id="attBody"></tbody>
-        </table>
-      </div>
-      <div class="footer-actions">
-        <button class="btn" onclick="saveAttendance()">💾 บันทึก</button>
-      </div>
+      <h4>รายวิชา</h4>
+      <input type="text" id="newSubject" placeholder="เพิ่มรายวิชาใหม่">
+      <button class="action">➕ เพิ่ม</button>
+      <div id="subjectManage"></div>
     </div>
-  </section>
+  </div>
 
-  <!-- ============ SECTION: Manage ============ -->
-  <section id="manage">
+  <!-- เมนู 3 -->
+  <div id="menu3" class="menu">
+    <h3>ประวัติการเข้าเรียน</h3>
     <div class="card">
-      <div class="subtabs">
-        <div class="tab active" id="tab-classes" onclick="switchManageTab('classes')">🏫 ห้องเรียน & นักเรียน</div>
-        <div class="tab" id="tab-subjects" onclick="switchManageTab('subjects')">📚 รายวิชา</div>
-      </div>
-
-      <!-- Classes panel -->
-      <div id="panel-classes">
-        <div class="row">
-          <input type="text" id="newClassName" placeholder="เพิ่มชื่อห้องเรียนใหม่ เช่น ม.3/1" />
-          <button class="btn" onclick="addClass()">เพิ่มข้อมูล</button>
-          <button class="btn secondary" onclick="saveAllClasses()">บันทึกลง Google Sheet</button>
-          <button class="btn warn" onclick="deleteAllClasses()">ลบข้อมูลทั้งหมด</button>
-        </div>
-
-        <div id="classCards" style="margin-top:10px"></div>
-      </div>
-
-      <!-- Subjects panel -->
-      <div id="panel-subjects" style="display:none">
-        <div class="row">
-          <input type="text" id="newSubject" placeholder="ชื่อรายวิชาใหม่ เช่น คณิตศาสตร์" />
-          <button class="btn" onclick="addSubject()">เพิ่มข้อมูล</button>
-          <button class="btn secondary" onclick="saveAllSubjects()">บันทึกลง Google Sheet</button>
-          <button class="btn warn" onclick="deleteAllSubjects()">ลบข้อมูลทั้งหมด</button>
-        </div>
-        <div id="subjectCards" style="margin-top:10px"></div>
-      </div>
+      <input type="date" id="historyDate">
+      ห้อง: <select id="historyRoom"></select>
+      วิชา: <select id="historySubject"></select>
+      <button class="action" onclick="loadHistory()">เรียกดูข้อมูล</button>
     </div>
-  </section>
+    <div id="historyTable"></div>
+  </div>
 
-  <!-- ============ SECTION: History & Report ============ -->
-  <section id="history">
-    <div class="card">
-      <h3>🗂️ ประวัติการเข้าเรียน</h3>
-      <div class="row">
-        <div>
-          <label>วันที่</label><br/>
-          <input type="date" id="hisDate" />
-          <div class="note">วันที่ที่เคยบันทึกจะมีข้อมูลปรากฏด้านล่าง</div>
-        </div>
-        <div>
-          <label>ห้องเรียน</label><br/>
-          <select id="hisRoom"></select>
-        </div>
-        <div>
-          <label>รายวิชา</label><br/>
-          <select id="hisSubject"></select>
-        </div>
-        <div>
-          <br/>
-          <button class="btn" onclick="loadHistory()">เรียกดูข้อมูล</button>
-        </div>
-      </div>
-    </div>
-
-    <div class="card">
-      <h3 style="margin:0 0 12px">ตารางข้อมูลย้อนหลัง</h3>
-      <div class="table-wrap">
-        <table id="hisTable">
-          <thead>
-            <tr>
-              <th style="width:80px">เลขที่</th>
-              <th style="width:140px">เลขประจำตัว</th>
-              <th>ชื่อ-สกุล</th>
-              <th style="width:140px">สถานะ</th>
-            </tr>
-          </thead>
-          <tbody id="hisBody"></tbody>
-        </table>
-      </div>
-    </div>
-
-    <div class="card">
-      <h3>📊 รายงานสรุปผล (6 สถานะ)</h3>
-
-      <div class="kpi">
-        <div class="card"><div class="dot" style="background:var(--green)"></div><div><b>มาเรียน</b><div id="kpi-present">0</div></div></div>
-        <div class="card"><div class="dot" style="background:var(--red)"></div><div><b>ขาด</b><div id="kpi-absent">0</div></div></div>
-        <div class="card"><div class="dot" style="background:var(--yellow)"></div><div><b>สาย</b><div id="kpi-late">0</div></div></div>
-      </div>
-
-      <div class="table-wrap" style="margin-top:14px">
-        <table id="repTable">
-          <thead>
-            <tr>
-              <th>ชื่อ-สกุล</th>
-              <th>มา</th><th>ขาด</th><th>สาย</th><th>ลากิจ</th><th>ลาป่วย</th><th>กิจกรรม</th>
-              <th>% มาเรียน</th>
-            </tr>
-          </thead>
-          <tbody id="repBody"></tbody>
-        </table>
-      </div>
-
-      <div style="margin:14px 0">
-        <canvas id="repChart" height="220"></canvas>
-      </div>
-
-      <div class="footer-actions">
-        <button class="btn secondary" onclick="exportExcel()">Export Excel</button>
-        <button class="btn secondary" onclick="exportPDF()">Export PDF</button>
-      </div>
-    </div>
-  </section>
-
-</div>
+  <!-- เมนู 4 -->
+  <div id="menu4" class="menu">
+    <h3>รายงานสรุปผล</h3>
+    <canvas id="reportChart" height="120"></canvas>
+  </div>
 
 <script>
-/* =========================
-   Config & Utilities
-========================= */
-const API_BASE = "https://script.google.com/macros/s/AKfycbyAUDEJkFnG-ZwCws0X-RGlST_MOhAwcW4ffn5jO51094vrmcEjjUJR7WTI6zo2Abpu/exec";
+  const scriptUrl = "https://script.google.com/macros/s/AKfycbyAUDEJkFnG-ZwCws0X-RGlST_MOhAwcW4ffn5jO51094vrmcEjjUJR7WTI6zo2Abpu/exec";
 
-// JSONP helper
-function jsonp(params){
-  return new Promise((resolve,reject)=>{
-    const cb = 'cb_' + Math.random().toString(36).slice(2);
-    const script = document.createElement('script');
-    const url = API_BASE + (API_BASE.includes('?') ? '&':'?') + params + `&callback=${cb}`;
-    window[cb] = (data)=>{ resolve(data); cleanup(); };
-    script.onerror = ()=>{ reject(new Error('JSONP error')); cleanup(); };
-    function cleanup(){
-      delete window[cb];
-      script.remove();
-    }
-    script.src = url;
-    document.body.appendChild(script);
-  });
-}
-
-// Date limit: only today or past
-function initDateLimits(){
-  const today = new Date().toISOString().split('T')[0];
-  ['attDate','hisDate'].forEach(id=>{
-    const el = document.getElementById(id);
-    el.max = today;
-    if(!el.value) el.value = today;
-    el.addEventListener('change', ()=>{
-      if(el.value > today){ el.value = today; }
-    });
-  });
-}
-
-// Shared state
-let ROOMS = [];             // [{name}]
-let SUBJECTS = [];          // [name]
-let STUDENTS_BY_ROOM = {};  // { room: [{number,id,name}] }
-let CURRENT_ATT = [];       // [{number,id,name,status}]
-
-/* =========================
-   Boot
-========================= */
-openSection('attendance');
-initDateLimits();
-loadAllMaster();
-
-function openSection(id){
-  document.querySelectorAll('section').forEach(s=>s.classList.remove('active'));
-  document.getElementById(id).classList.add('active');
-  // refresh selects
-  if(id==='attendance'){ fillSelects('attRoom','attSubject'); }
-  if(id==='history'){ fillSelects('hisRoom','hisSubject'); }
-}
-
-// load rooms/subjects/students from GAS
-async function loadAllMaster(){
-  try{
-    const data = await jsonp('action=getAll');
-    ROOMS = data.rooms || [];
-    SUBJECTS = data.subjects || [];
-    STUDENTS_BY_ROOM = data.studentsByRoom || {};
-    renderClassCards();
-    renderSubjectCards();
-    fillSelects('attRoom','attSubject');
-    fillSelects('hisRoom','hisSubject');
-  }catch(e){
-    console.error(e);
-    // fallback: empty state
+  function showTab(tab){
+    document.querySelectorAll(".menu").forEach(m=>m.style.display="none");
+    document.getElementById(tab).style.display="block";
   }
-}
 
-function fillSelects(roomSelId, subjectSelId){
-  const rs = document.getElementById(roomSelId), ss = document.getElementById(subjectSelId);
-  if(rs){ rs.innerHTML = `<option value="">-- เลือกห้องเรียน --</option>` + ROOMS.map(r=>`<option value="${r.name}">${r.name}</option>`).join(''); }
-  if(ss){ ss.innerHTML = `<option value="">-- เลือกรายวิชา --</option>` + SUBJECTS.map(s=>`<option value="${s}">${s}</option>`).join(''); }
-}
-
-/* =========================
-   Attendance
-========================= */
-function loadStudentsForAttendance(){
-  const room = document.getElementById('attRoom').value;
-  const subject = document.getElementById('attSubject').value;
-  if(!room || !subject){ Swal.fire('กรุณาเลือกห้องเรียนและรายวิชา'); return; }
-  const list = (STUDENTS_BY_ROOM[room] || []).slice().sort((a,b)=>Number(a.number)-Number(b.number));
-  CURRENT_ATT = list.map(x=>({...x, status:'ขาด'}));
-  renderAttTable();
-}
-function renderAttTable(){
-  const tbody = document.getElementById('attBody');
-  tbody.innerHTML = '';
-  CURRENT_ATT.forEach((s,i)=>{
-    const tr = document.createElement('tr');
-    tr.innerHTML = `
-      <td>${s.number}</td>
-      <td>${s.id}</td>
-      <td>${s.name}</td>
-      <td>
-        <span class="status-btn มา active" onclick="setStatus(${i},'มา')">/</span>
-        <span class="status-btn ขาด" onclick="setStatus(${i},'ขาด')">ข</span>
-        <span class="status-btn สาย" onclick="setStatus(${i},'สาย')">ส</span>
-        <span class="status-btn ลากิจ" onclick="setStatus(${i},'ลากิจ')">ล</span>
-        <span class="status-btn ลาป่วย" onclick="setStatus(${i},'ลาป่วย')">ป</span>
-        <span class="status-btn กิจกรรม" onclick="setStatus(${i},'กิจกรรม')">ก</span>
-      </td>
-    `;
-    tbody.appendChild(tr);
-  });
-  document.getElementById('attCount').textContent = `${CURRENT_ATT.length} คน`;
-  refreshAttStatusUI();
-}
-function setStatus(idx, st){
-  CURRENT_ATT[idx].status = st;
-  refreshAttStatusUI();
-}
-function refreshAttStatusUI(){
-  const rows = document.querySelectorAll('#attBody tr');
-  CURRENT_ATT.forEach((s,i)=>{
-    const btns = rows[i].querySelectorAll('.status-btn');
-    btns.forEach(b=>{
-      b.classList.remove('active');
-      if(b.classList.contains(s.status)) b.classList.add('active');
-    });
-  });
-}
-async function saveAttendance(){
-  const date = document.getElementById('attDate').value;
-  const room = document.getElementById('attRoom').value;
-  const subject = document.getElementById('attSubject').value;
-  if(!date || !room || !subject || CURRENT_ATT.length===0){ Swal.fire('กรุณากรอกข้อมูลให้ครบ'); return; }
-  // แจ้งเตือนกำลังบันทึก
-  Swal.fire({
-    title: 'กำลังบันทึกข้อมูล...',
-    allowOutsideClick: false,
-    didOpen: () => { Swal.showLoading(); }
+  // จำกัดวันในปฏิทิน
+  document.addEventListener("DOMContentLoaded",()=>{
+    let today=new Date().toISOString().split('T')[0];
+    document.getElementById("dateInput").setAttribute("max",today);
+    loadRooms(); loadSubjects();
   });
 
-  const payload = encodeURIComponent(JSON.stringify({date,room,subject,rows:CURRENT_ATT}));
-  await jsonp(`action=saveAttendance&data=${payload}`);
+  function resetAttendance(){
+    document.getElementById("studentList").innerHTML="";
+  }
 
-  Swal.fire('✅','บันทึกสำเร็จ','success');
-}
-// รีเซ็ตข้อมูลเมื่อเปลี่ยนวันที่
-document.getElementById('attDate').addEventListener('change', ()=>{
-  CURRENT_ATT = [];
-  renderAttTable(); // ล้างตาราง
-});
-
-// รีเซ็ตข้อมูลเมื่อเปลี่ยนห้องเรียนหรือรายวิชา
-document.getElementById('attRoom').addEventListener('change', ()=>{ CURRENT_ATT = []; renderAttTable(); });
-document.getElementById('attSubject').addEventListener('change', ()=>{ CURRENT_ATT = []; renderAttTable(); });
-
-function loadStudentsForAttendance(){
-  const date = document.getElementById('attDate').value;
-  const room = document.getElementById('attRoom').value;
-  const subject = document.getElementById('attSubject').value;
-
-  if(!date || !room || !subject){ Swal.fire('กรุณาเลือกวันที่ ห้องเรียน และรายวิชาให้ครบ'); return; }
-
-  
-/* =========================
-   Manage: Classes & Students
-========================= */
-function switchManageTab(name){
-  document.getElementById('panel-classes').style.display = name==='classes' ? 'block':'none';
-  document.getElementById('panel-subjects').style.display = name==='subjects' ? 'block':'none';
-  document.getElementById('tab-classes').classList.toggle('active', name==='classes');
-  document.getElementById('tab-subjects').classList.toggle('active', name==='subjects');
-}
-
-function addClass(){
-  const name = document.getElementById('newClassName').value.trim();
-  if(!name) return;
-  if(ROOMS.find(r=>r.name===name)){ Swal.fire('มีชื่อห้องนี้แล้ว'); return; }
-  ROOMS.push({name});
-  STUDENTS_BY_ROOM[name] = [];
-  document.getElementById('newClassName').value='';
-  renderClassCards(); fillSelects('attRoom','attSubject'); fillSelects('hisRoom','hisSubject');
-}
-
-function renderClassCards(){
-  const wrap = document.getElementById('classCards');
-  wrap.innerHTML = '';
-  ROOMS.forEach(r=>{
-    const count = (STUDENTS_BY_ROOM[r.name]||[]).length;
-    const card = document.createElement('div');
-    card.className = 'card';
-    card.innerHTML = `
-      <div class="row" style="justify-content:space-between">
-        <div><b>${r.name}</b> <span class="badge">นักเรียน (${count})</span></div>
-        <div class="row">
-          <button class="btn secondary" onclick="openManageStudents('${r.name}')">จัดการนักเรียน</button>
-          <button class="btn secondary" onclick="editClassName('${r.name}')">แก้ไข</button>
-          <button class="btn warn" onclick="removeClass('${r.name}')">ลบ</button>
-        </div>
-      </div>
-    `;
-    wrap.appendChild(card);
-  });
-}
-
-function editClassName(oldName){
-  Swal.fire({
-    title:'แก้ชื่อห้องเรียน', input:'text', inputValue:oldName, showCancelButton:true,
-    confirmButtonText:'บันทึก'
-  }).then(res=>{
-    if(!res.isConfirmed) return;
-    const newName = (res.value||'').trim(); if(!newName) return;
-    if(ROOMS.find(r=>r.name===newName)){ Swal.fire('มีชื่อห้องนี้แล้ว'); return; }
-    // move
-    const idx = ROOMS.findIndex(r=>r.name===oldName);
-    ROOMS[idx].name = newName;
-    STUDENTS_BY_ROOM[newName] = STUDENTS_BY_ROOM[oldName]||[];
-    delete STUDENTS_BY_ROOM[oldName];
-    renderClassCards(); fillSelects('attRoom','attSubject'); fillSelects('hisRoom','hisSubject');
-  });
-}
-
-function removeClass(name){
-  Swal.fire({title:`ลบ "${name}" ?`, icon:'warning', showCancelButton:true}).then(r=>{
-    if(!r.isConfirmed) return;
-    ROOMS = ROOMS.filter(x=>x.name!==name);
-    delete STUDENTS_BY_ROOM[name];
-    renderClassCards(); fillSelects('attRoom','attSubject'); fillSelects('hisRoom','hisSubject');
-  });
-}
-
-function openManageStudents(className){
-  const list = (STUDENTS_BY_ROOM[className]||[]).slice().sort((a,b)=>Number(a.number)-Number(b.number));
-  let html = `
-    <div class="row" style="margin-bottom:10px">
-      <input type="number" id="stuNo" placeholder="เลขที่" style="width:100px">
-      <input type="text" id="stuId" placeholder="เลขประจำตัว (1-6 หลัก)" style="width:180px" />
-      <input type="text" id="stuName" placeholder="ชื่อ-สกุล" style="min-width:240px" />
-      <button class="btn" onclick="addStudent('${className}')">เพิ่มข้อมูล</button>
-      <input type="file" id="fileExcel" accept=".xlsx,.xls" style="display:none"/>
-      <button class="btn secondary" onclick="document.getElementById('fileExcel').click()">นำเข้าจาก Excel</button>
-      <span class="note">คอลัมน์ A=เลขที่, B=เลขประจำตัว, C=ชื่อ-สกุล</span>
-    </div>
-    <div class="table-wrap"><table>
-      <thead><tr><th style="width:90px">เลขที่</th><th style="width:160px">เลขประจำตัว</th><th>ชื่อ-สกุล</th><th style="width:120px">จัดการ</th></tr></thead>
-      <tbody id="stuBody">
-        ${list.map((s,i)=>`<tr><td>${s.number}</td><td>${s.id}</td><td>${s.name}</td>
-          <td><button class="btn secondary" onclick="editStudent('${className}',${i})">แก้ไข</button>
-              <button class="btn warn" onclick="deleteStudent('${className}',${i})">ลบ</button></td></tr>`).join('')}
-      </tbody>
-    </table></div>
-  `;
-  Swal.fire({
-    title:`จัดการนักเรียนห้อง ${className}`,
-    width:900, html:html, showConfirmButton:false, showCloseButton:true, didOpen:()=>{
-      const input = document.getElementById('fileExcel');
-      input.onchange = (e)=>handleImportExcel(e,className);
+  function checkAndLoadStudents(){
+    let d=document.getElementById("dateInput").value;
+    let r=document.getElementById("roomSelect").value;
+    let s=document.getElementById("subjectSelect").value;
+    if(d && r && s){
+      loadStudents();
+    } else {
+      Swal.fire("⚠️","กรุณาเลือก วันที่ ห้อง และวิชา ให้ครบ","warning");
     }
-  });
-}
+  }
 
-function addStudent(className){
-  const number = String(document.getElementById('stuNo').value||'').trim();
-  const id = String(document.getElementById('stuId').value||'').trim();
-  const name = String(document.getElementById('stuName').value||'').trim();
-  if(!number || !id || !name){ Swal.fire('กรอกข้อมูลให้ครบ'); return; }
-  if(!/^\d{1,6}$/.test(id)){ Swal.fire('เลขประจำตัวต้องเป็นตัวเลข 1–6 หลัก'); return; }
-  (STUDENTS_BY_ROOM[className] ||= []).push({number,id,name});
-  openManageStudents(className); renderClassCards();
-}
-function editStudent(className, idx){
-  const s = (STUDENTS_BY_ROOM[className]||[])[idx];
-  Swal.fire({
-    title:'แก้ไขนักเรียน', html:`
-      <div class="row"><input id="eNo" type="number" value="${s.number}" style="width:120px">
-      <input id="eId" type="text" value="${s.id}" style="width:180px">
-      <input id="eName" type="text" value="${s.name}" style="min-width:240px"></div>`,
-    showCancelButton:true, confirmButtonText:'บันทึก'
-  }).then(r=>{
-    if(!r.isConfirmed) return;
-    const number = document.getElementById('eNo').value.trim();
-    const id = document.getElementById('eId').value.trim();
-    const name = document.getElementById('eName').value.trim();
-    STUDENTS_BY_ROOM[className][idx] = {number,id,name};
-    openManageStudents(className); renderClassCards();
-  });
-}
-function deleteStudent(className, idx){
-  (STUDENTS_BY_ROOM[className]||[]).splice(idx,1);
-  openManageStudents(className); renderClassCards();
-}
+  function loadRooms(){
+    fetch(scriptUrl+"?action=getRooms")
+      .then(r=>r.json()).then(data=>{
+        let sel=document.getElementById("roomSelect");
+        sel.innerHTML="<option value=''>--เลือก--</option>";
+        data.forEach(r=> sel.innerHTML+=`<option>${r}</option>`);
+        document.getElementById("historyRoom").innerHTML=sel.innerHTML;
+      });
+  }
+  function loadSubjects(){
+    fetch(scriptUrl+"?action=getSubjects")
+      .then(r=>r.json()).then(data=>{
+        let sel=document.getElementById("subjectSelect");
+        sel.innerHTML="<option value=''>--เลือก--</option>";
+        data.forEach(r=> sel.innerHTML+=`<option>${r}</option>`);
+        document.getElementById("historySubject").innerHTML=sel.innerHTML;
+      });
+  }
 
-// Excel import (.xlsx) with preview
-function handleImportExcel(ev, className){
-  const file = ev.target.files[0];
-  if(!file) return;
-  const reader = new FileReader();
-  reader.onload = (e)=>{
-    const wb = XLSX.read(new Uint8Array(e.target.result), {type:'array'});
-    const ws = wb.Sheets[wb.SheetNames[0]];
-    const json = XLSX.utils.sheet_to_json(ws, {header:1});
-    // expect: A=เลขที่, B=รหัส, C=ชื่อ
-    const rows = json.slice(1).filter(r=>r && (r[0]||r[1]||r[2])).map(r=>({
-      number: String(r[0]||'').trim(),
-      id: String(r[1]||'').trim(),
-      name: String(r[2]||'').trim()
-    })).filter(x=>x.number && x.id && x.name);
-    const html = `
-      <div class="preview-table"><table>
-        <thead><tr><th>เลขที่</th><th>เลขประจำตัว</th><th>ชื่อ-สกุล</th></tr></thead>
-        <tbody>${rows.map(r=>`<tr><td>${r.number}</td><td>${r.id}</td><td>${r.name}</td></tr>`).join('')}</tbody>
-      </table></div>
-    `;
-    Swal.fire({
-      title:'พรีวิวข้อมูลนำเข้า', html, showCancelButton:true, confirmButtonText:'ยืนยันข้อมูล'
-    }).then(res=>{
-      if(!res.isConfirmed) return;
-      (STUDENTS_BY_ROOM[className] ||= []).push(...rows);
-      openManageStudents(className); renderClassCards();
-      Swal.fire('✅','นำเข้าข้อมูลแล้ว','success');
+  function loadStudents(){
+    let room=document.getElementById("roomSelect").value;
+    fetch(scriptUrl+`?action=getStudents&room=${room}`)
+      .then(r=>r.json()).then(data=>{
+        let div=document.getElementById("studentList"); div.innerHTML="";
+        data.forEach(st=>{
+          div.innerHTML+=`
+            <div>
+              ${st.number} | ${st.id} | ${st.name}
+              <span class="status-btn มา active" onclick="toggleStatus(this,'มา')">/</span>
+              <span class="status-btn ขาด" onclick="toggleStatus(this,'ขาด')">ข</span>
+              <span class="status-btn ลากิจ" onclick="toggleStatus(this,'ลากิจ')">ล</span>
+              <span class="status-btn ลาป่วย" onclick="toggleStatus(this,'ลาป่วย')">ป</span>
+              <span class="status-btn กิจกรรม" onclick="toggleStatus(this,'กิจกรรม')">ก</span>
+            </div>`;
+        });
+      });
+  }
+
+  function toggleStatus(el,status){
+    el.parentNode.querySelectorAll(".status-btn").forEach(b=>b.classList.remove("active"));
+    el.classList.add("active");
+    el.setAttribute("data-status",status);
+  }
+
+  function saveAttendance(){
+    Swal.fire({title:"กำลังบันทึกข้อมูล...",allowOutsideClick:false,didOpen:()=>Swal.showLoading()});
+    let date=document.getElementById("dateInput").value;
+    let room=document.getElementById("roomSelect").value;
+    let subject=document.getElementById("subjectSelect").value;
+    let rows=[];
+    document.querySelectorAll("#studentList div").forEach(d=>{
+      let parts=d.innerText.split("|");
+      let st=d.querySelector("[data-status]");
+      let status=st?st.getAttribute("data-status"):"มา";
+      rows.push({date,room,subject,number:parts[0].trim(),studentId:parts[1].trim(),name:parts[2].trim(),status});
     });
-  };
-  reader.readAsArrayBuffer(file);
-}
-
-// Save / Delete to Google Sheets (classes + students)
-async function saveAllClasses(){
-  const data = encodeURIComponent(JSON.stringify({rooms:ROOMS, studentsByRoom:STUDENTS_BY_ROOM}));
-  await jsonp(`action=saveClasses&data=${data}`);
-  Swal.fire('✅','บันทึกห้องเรียน/นักเรียนลง Google Sheet แล้ว','success');
-}
-async function deleteAllClasses(){
-  const ok = await Swal.fire({title:'ลบข้อมูลห้องเรียนทั้งหมด?', icon:'warning', showCancelButton:true})
-  if(!ok.isConfirmed) return;
-  await jsonp(`action=deleteAllClasses`);
-  ROOMS=[]; STUDENTS_BY_ROOM={}; renderClassCards(); fillSelects('attRoom','attSubject'); fillSelects('hisRoom','hisSubject');
-  Swal.fire('✅','ลบข้อมูลทั้งหมดแล้ว','success');
-}
-
-/* =========================
-   Manage: Subjects
-========================= */
-function addSubject(){
-  const s = document.getElementById('newSubject').value.trim();
-  if(!s) return;
-  if(SUBJECTS.includes(s)){ Swal.fire('มีรายวิชานี้แล้ว'); return; }
-  SUBJECTS.push(s); document.getElementById('newSubject').value='';
-  renderSubjectCards(); fillSelects('attRoom','attSubject'); fillSelects('hisRoom','hisSubject');
-}
-function renderSubjectCards(){
-  const wrap = document.getElementById('subjectCards'); wrap.innerHTML='';
-  SUBJECTS.forEach(name=>{
-    const card = document.createElement('div');
-    card.className='card';
-    card.innerHTML = `
-      <div class="row" style="justify-content:space-between">
-        <div><b>${name}</b></div>
-        <div class="row">
-          <button class="btn secondary" onclick="editSubject('${name}')">แก้ไข</button>
-          <button class="btn warn" onclick="removeSubject('${name}')">ลบ</button>
-        </div>
-      </div>`;
-    wrap.appendChild(card);
-  });
-}
-function editSubject(oldName){
-  Swal.fire({title:'แก้ไขชื่อรายวิชา', input:'text', inputValue:oldName, showCancelButton:true})
-    .then(r=>{
-      if(!r.isConfirmed) return;
-      const v = (r.value||'').trim(); if(!v) return;
-      if(SUBJECTS.includes(v)){ Swal.fire('มีรายวิชานี้แล้ว'); return; }
-      SUBJECTS = SUBJECTS.map(x=>x===oldName? v : x);
-      renderSubjectCards(); fillSelects('attRoom','attSubject'); fillSelects('hisRoom','hisSubject');
+    fetch(scriptUrl,{
+      method:"POST",body:JSON.stringify({action:"saveAttendance",rows})
+    }).then(r=>r.json()).then(res=>{
+      Swal.fire("✅",res.message,"success");
     });
-}
-function removeSubject(name){
-  Swal.fire({title:`ลบ "${name}" ?`, icon:'warning', showCancelButton:true})
-    .then(r=>{
-      if(!r.isConfirmed) return;
-      SUBJECTS = SUBJECTS.filter(x=>x!==name);
-      renderSubjectCards(); fillSelects('attRoom','attSubject'); fillSelects('hisRoom','hisSubject');
-    });
-}
-async function saveAllSubjects(){
-  const data = encodeURIComponent(JSON.stringify({subjects:SUBJECTS}));
-  await jsonp(`action=saveSubjects&data=${data}`);
-  Swal.fire('✅','บันทึกรายวิชาลง Google Sheet แล้ว','success');
-}
-async function deleteAllSubjects(){
-  const ok = await Swal.fire({title:'ลบข้อมูลรายวิชาทั้งหมด?', icon:'warning', showCancelButton:true})
-  if(!ok.isConfirmed) return;
-  await jsonp(`action=deleteAllSubjects`);
-  SUBJECTS=[]; renderSubjectCards(); fillSelects('attRoom','attSubject'); fillSelects('hisRoom','hisSubject');
-  Swal.fire('✅','ลบข้อมูลรายวิชาทั้งหมดแล้ว','success');
-}
+  }
 
-/* =========================
-   History + Report
-========================= */
-let chartInst = null;
+  function loadHistory(){
+    let date=document.getElementById("historyDate").value;
+    let room=document.getElementById("historyRoom").value;
+    let subject=document.getElementById("historySubject").value;
+    fetch(scriptUrl+`?action=getHistory&date=${date}&room=${room}&subject=${subject}`)
+      .then(r=>r.json()).then(data=>{
+        let html="<table><tr><th>เลขที่</th><th>รหัส</th><th>ชื่อ</th><th>สถานะ</th></tr>";
+        data.forEach(r=> html+=`<tr><td>${r.number}</td><td>${r.id}</td><td>${r.name}</td><td>${r.status}</td></tr>`);
+        html+="</table>";
+        document.getElementById("historyTable").innerHTML=html;
+      });
+  }
 
-async function loadHistory(){
-  const date = document.getElementById('hisDate').value;
-  const room = document.getElementById('hisRoom').value;
-  const subject = document.getElementById('hisSubject').value;
-  if(!date || !room || !subject){ Swal.fire('กรุณาเลือกวัน/ห้อง/วิชา'); return; }
-  const payload = encodeURIComponent(JSON.stringify({date,room,subject}));
-  const rows = await jsonp(`action=getHistory&data=${payload}`);
-  // Fill table
-  const tbody = document.getElementById('hisBody'); tbody.innerHTML='';
-  rows.forEach(r=>{
-    const tr = document.createElement('tr');
-    tr.innerHTML = `<td>${r.number}</td><td>${r.studentId}</td><td>${r.name}</td><td>${r.status}</td>`;
-    tbody.appendChild(tr);
-  });
-
-  // Build report by student
-  const byName = {};
-  rows.forEach(r=>{
-    byName[r.name] ||= {มา:0,ขาด:0,สาย:0,ลากิจ:0,ลาป่วย:0,กิจกรรม:0};
-    byName[r.name][r.status] = (byName[r.name][r.status]||0)+1;
-  });
-  const repArray = Object.entries(byName).map(([name, s])=>{
-    const total = s.มา+s.ขาด+s.สาย+s.ลากิจ+s.ลาป่วย+s.กิจกรรม;
-    const pct = total? Math.round(s.มา*100/total) : 0;
-    return {name, ...s, percent:pct};
-  });
-  renderReport(repArray);
-}
-
-function renderReport(report){
-  // KPIs
-  const sum = (key)=> report.reduce((a,b)=>a+(b[key]||0),0);
-  document.getElementById('kpi-present').textContent = sum('มา');
-  document.getElementById('kpi-absent').textContent = sum('ขาด');
-  document.getElementById('kpi-late').textContent = sum('สาย');
-
-  // Table
-  const tbody = document.getElementById('repBody'); tbody.innerHTML='';
-  report.forEach(r=>{
-    const tr = document.createElement('tr');
-    tr.innerHTML = `<td>${r.name}</td>
-      <td>${r.มา}</td><td>${r.ขาด}</td><td>${r.สาย}</td><td>${r.ลากิจ}</td><td>${r.ลาป่วย}</td><td>${r.กิจกรรม}</td>
-      <td>${r.percent}%</td>`;
-    tbody.appendChild(tr);
-  });
-
-  // Chart
-  const ctx = document.getElementById('repChart').getContext('2d');
-  if(chartInst) chartInst.destroy();
-  chartInst = new Chart(ctx, {
-    type:'bar',
-    data:{
-      labels: report.map(r=>r.name),
-      datasets:[
-        {label:'มา', data:report.map(r=>r.มา), backgroundColor:'#27ae60'},
-        {label:'ขาด', data:report.map(r=>r.ขาด), backgroundColor:'#c0392b'},
-        {label:'สาย', data:report.map(r=>r.สาย), backgroundColor:'#f1c40f'},
-        {label:'ลากิจ', data:report.map(r=>r.ลากิจ), backgroundColor:'#8e44ad'},
-        {label:'ลาป่วย', data:report.map(r=>r.ลาป่วย), backgroundColor:'#e67e22'},
-        {label:'กิจกรรม', data:report.map(r=>r.กิจกรรม), backgroundColor:'#f39c12'}
-      ]
-    },
-    options:{responsive:true, scales:{y:{beginAtZero:true}}, plugins:{legend:{position:'top'}}}
-  });
-}
-
-/* =========================
-   Export
-========================= */
-function exportExcel(){
-  const wb = XLSX.utils.book_new();
-  const ws = XLSX.utils.table_to_sheet(document.getElementById('repTable'));
-  XLSX.utils.book_append_sheet(wb, ws, 'Report');
-  XLSX.writeFile(wb, 'Attendance_Report.xlsx');
-}
-function exportPDF(){
-  const el = document.getElementById('repTable');
-  html2pdf().set({margin:10, filename:'Attendance_Report.pdf', html2canvas:{scale:2}}).from(el).save();
-}
+  // 📊 รายงานสรุป
+  function loadReport(){
+    fetch(scriptUrl+"?action=getReport")
+      .then(r=>r.json()).then(data=>{
+        let ctx=document.getElementById("reportChart").getContext("2d");
+        new Chart(ctx,{
+          type:"pie",
+          data:{
+            labels:["มา","ขาด","ลากิจ","ลาป่วย","กิจกรรม"],
+            datasets:[{
+              data:[data.มา,data.ขาด,data.ลากิจ,data.ลาป่วย,data.กิจกรรม],
+              backgroundColor:["#27ae60","#c0392b","#8e44ad","#e67e22","#f1c40f"]
+            }]
+          }
+        });
+      });
+  }
 </script>
+
 </body>
 </html>
-
