@@ -118,6 +118,24 @@ tr:nth-child(even) td{background:#fcfdff}
 <div class="container">
 
   <!-- ============ SECTION: Attendance ============ -->
+<style>
+/* เพิ่มฟอนต์และขนาดสำหรับ select และปุ่มโหลดรายชื่อ */
+#attRoom, #attSubject {
+  font-family: 'Sarabun', sans-serif;
+  font-size: 16px;
+}
+button#loadAttBtn {
+  font-family: 'Sarabun', sans-serif;
+  font-size: 16px;
+}
+</style>
+
+<!-- แก้ไขปุ่มโหลดรายชื่อ -->
+<button class="btn" id="loadAttBtn" onclick="loadStudentsForAttendance()">โหลดรายชื่อ</button>
+
+<script>
+
+  
   <section id="attendance" class="active">
     <div class="card">
       <h3>📌 บันทึกการเข้าเรียน</h3>
@@ -165,7 +183,49 @@ tr:nth-child(even) td{background:#fcfdff}
       </div>
     </div>
   </section>
+// รีเซ็ตข้อมูลเมื่อเปลี่ยนวันที่
+document.getElementById('attDate').addEventListener('change', ()=>{
+  CURRENT_ATT = [];
+  renderAttTable(); // ล้างตาราง
+});
 
+// รีเซ็ตข้อมูลเมื่อเปลี่ยนห้องเรียนหรือรายวิชา
+document.getElementById('attRoom').addEventListener('change', ()=>{ CURRENT_ATT = []; renderAttTable(); });
+document.getElementById('attSubject').addEventListener('change', ()=>{ CURRENT_ATT = []; renderAttTable(); });
+
+function loadStudentsForAttendance(){
+  const date = document.getElementById('attDate').value;
+  const room = document.getElementById('attRoom').value;
+  const subject = document.getElementById('attSubject').value;
+
+  if(!date || !room || !subject){ Swal.fire('กรุณาเลือกวันที่ ห้องเรียน และรายวิชาให้ครบ'); return; }
+
+  // โหลดรายชื่อนักเรียนและกำหนดสถานะเริ่มต้นเป็น "มาเรียน"
+  const list = (STUDENTS_BY_ROOM[room] || []).slice().sort((a,b)=>Number(a.number)-Number(b.number));
+  CURRENT_ATT = list.map(x=>({...x, status:'มา'}));
+  renderAttTable();
+}
+
+async function saveAttendance(){
+  const date = document.getElementById('attDate').value;
+  const room = document.getElementById('attRoom').value;
+  const subject = document.getElementById('attSubject').value;
+
+  if(!date || !room || !subject || CURRENT_ATT.length===0){ Swal.fire('กรุณากรอกข้อมูลให้ครบ'); return; }
+
+  // แจ้งเตือนกำลังบันทึก
+  Swal.fire({
+    title: 'กำลังบันทึกข้อมูล...',
+    allowOutsideClick: false,
+    didOpen: () => { Swal.showLoading(); }
+  });
+
+  const payload = encodeURIComponent(JSON.stringify({date,room,subject,rows:CURRENT_ATT}));
+  await jsonp(`action=saveAttendance&data=${payload}`);
+
+  Swal.fire('✅','บันทึกสำเร็จ','success');
+}
+</script>
   <!-- ============ SECTION: Manage ============ -->
   <section id="manage">
     <div class="card">
@@ -733,3 +793,4 @@ function exportPDF(){
 </script>
 </body>
 </html>
+
