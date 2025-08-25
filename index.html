@@ -3,129 +3,176 @@
 <head>
   <meta charset="UTF-8">
   <title>ระบบเช็คชื่อเข้าเรียน</title>
-  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
   <style>
-    body { font-family: 'Prompt', sans-serif; }
-    .popup {
-      position: fixed; top: 0; left: 0;
-      width: 100%; height: 100%;
-      background: rgba(0,0,0,0.6);
-      display: none; justify-content: center; align-items: center;
+    body {
+      font-family: "Prompt", sans-serif;
+      margin: 0; padding: 0;
+      background: linear-gradient(135deg, #74ebd5 0%, #ACB6E5 100%);
+      color: #333;
     }
-    .popup-content {
-      background: white; padding: 20px; border-radius: 10px;
-      width: 80%; max-height: 80%; overflow-y: auto;
+    header {
+      background: #2d3436;
+      color: #fff;
+      padding: 20px;
+      text-align: center;
+      font-size: 24px;
+      letter-spacing: 1px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+    }
+    .container {
+      padding: 20px;
+      max-width: 1200px;
+      margin: auto;
+    }
+    .menu-btn {
+      display: inline-block;
+      margin: 5px;
+      padding: 12px 20px;
+      background: linear-gradient(45deg, #ff6b6b, #feca57);
+      border: none; border-radius: 8px;
+      font-size: 16px; font-weight: bold;
+      color: #fff;
+      cursor: pointer;
+      transition: 0.3s;
+    }
+    .menu-btn:hover { transform: scale(1.05); }
+    .menu {
+      display: none;
+      margin-top: 20px;
+      padding: 20px;
+      background: #fff;
+      border-radius: 16px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+      animation: fadeIn 0.5s ease;
+    }
+    h3 { color: #2d3436; }
+    input, select, button {
+      padding: 8px;
+      border-radius: 8px;
+      border: 1px solid #ccc;
+      margin: 5px 0;
+    }
+    button.save-btn {
+      background: linear-gradient(45deg, #1dd1a1, #10ac84);
+      color: #fff; border: none; font-weight: bold;
+    }
+    button.save-btn:hover { opacity: 0.9; }
+    .student-card {
+      display: flex; align-items: center;
+      justify-content: space-between;
+      background: #f1f2f6;
+      padding: 10px;
+      margin: 5px 0;
+      border-radius: 12px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    }
+    .status-btn {
+      margin: 2px;
+      padding: 8px 12px;
+      border-radius: 50%;
+      color: #fff; font-weight: bold;
+      cursor: pointer;
+      opacity: 0.4; transition: 0.2s;
+    }
+    .status-btn.active { opacity: 1; transform: scale(1.1); }
+    .มา { background:#2ecc71; }
+    .ขาด { background:#e74c3c; }
+    .ลากิจ { background:#9b59b6; }
+    .ลาป่วย { background:#e67e22; }
+    .กิจกรรม { background:#f1c40f; color:#000; }
+    table {
+      width: 100%; border-collapse: collapse; margin-top: 15px;
+      background: #fff; border-radius: 12px; overflow: hidden;
+    }
+    th, td {
+      padding: 10px; border-bottom: 1px solid #ddd; text-align: center;
+    }
+    th { background: #74b9ff; color:#fff; }
+    @keyframes fadeIn {
+      from {opacity:0; transform:translateY(10px);}
+      to {opacity:1; transform:translateY(0);}
     }
   </style>
 </head>
-<body class="bg-gradient-to-r from-pink-200 to-blue-200 min-h-screen">
+<body>
+  <header>📘 ระบบเช็คชื่อเข้าเรียน</header>
+  <div class="container">
+    <button class="menu-btn" onclick="showTab('menu1')">✅ บันทึกการเข้าเรียน</button>
+    <button class="menu-btn" onclick="showTab('menu2')">⚙️ จัดการข้อมูล</button>
+    <button class="menu-btn" onclick="showTab('menu3')">📊 ประวัติการเข้าเรียน</button>
 
-  <!-- Header -->
-  <header class="bg-pink-500 text-white text-center py-4 text-2xl font-bold shadow-md">
-    ระบบเช็คชื่อ & จัดการข้อมูลนักเรียน
-  </header>
-
-  <!-- Content -->
-  <div class="p-6">
-
-    <!-- เพิ่มห้องเรียน -->
-    <div class="bg-white shadow-lg rounded-xl p-6 mb-6">
-      <h2 class="text-xl font-bold mb-3 text-pink-600">เพิ่มห้องเรียน</h2>
-      <div class="flex space-x-2">
-        <input id="className" type="text" placeholder="ชื่อห้องเรียน" class="border p-2 rounded w-full">
-        <button onclick="addClassroom()" class="bg-pink-500 hover:bg-pink-600 text-white px-4 py-2 rounded">เพิ่มข้อมูล</button>
-      </div>
+    <!-- เมนู 1 -->
+    <div id="menu1" class="menu">
+      <h3>✅ บันทึกการเข้าเรียน</h3>
+      วันที่: <input type="date" id="dateInput" max="<?= new Date().toISOString().split('T')[0] ?>">
+      <br>ห้อง: <select id="roomSelect"></select>
+      วิชา: <select id="subjectSelect"></select>
+      <button onclick="loadStudents()">📋 โหลดรายชื่อ</button>
+      <div id="studentList"></div>
+      <button class="save-btn" onclick="saveAttendance()">💾 บันทึก</button>
     </div>
 
-    <!-- รายการห้องเรียน -->
-    <div class="bg-white shadow-lg rounded-xl p-6">
-      <h2 class="text-xl font-bold mb-3 text-blue-600">รายการห้องเรียน</h2>
-      <ul id="classList" class="space-y-2"></ul>
+    <!-- เมนู 2 -->
+    <div id="menu2" class="menu">
+      <h3>⚙️ จัดการข้อมูล</h3>
+      <h4>🏫 ห้องเรียน</h4>
+      <!-- จัดการห้องเรียน -->
+<div class="card p-4 bg-white rounded-2xl shadow-md">
+  <h2 class="text-lg font-bold mb-3 text-indigo-600">📚 จัดการห้องเรียน</h2>
+
+  <!-- ฟอร์มเพิ่มห้องเรียน -->
+  <div class="flex gap-2 mb-3">
+    <input type="text" id="classroomName" placeholder="ชื่อห้องเรียน" 
+           class="border rounded-lg px-3 py-2 flex-1">
+    <button onclick="addClassroom()" 
+            class="bg-green-500 text-white px-4 py-2 rounded-lg shadow">
+      ➕ เพิ่มข้อมูล
+    </button>
+  </div>
+
+  <!-- รายการห้องเรียน -->
+  <ul id="classroomList" class="space-y-2"></ul>
+</div>
+
+<!-- Modal นำเข้านักเรียน -->
+<div id="importModal" class="hidden fixed inset-0 flex items-center justify-center bg-black bg-opacity-50">
+  <div class="bg-white p-6 rounded-lg shadow-lg w-1/2">
+    <h3 class="text-lg font-bold mb-4">📑 ตรวจสอบข้อมูลนักเรียน</h3>
+    <div id="previewArea" class="max-h-60 overflow-y-auto border p-2 mb-3"></div>
+    <div class="flex justify-end gap-2">
+      <button onclick="confirmImport()" class="bg-blue-500 text-white px-4 py-2 rounded">ยืนยันข้อมูล</button>
+      <button onclick="closeModal()" class="bg-gray-400 text-white px-4 py-2 rounded">ยกเลิก</button>
+    </div>
+  </div>
+</div>
+
+      <h4>📚 รายวิชา</h4>
+      <div id="subjectManage"></div>
+    </div>
+
+    <!-- เมนู 3 -->
+    <div id="menu3" class="menu">
+      <h3>📊 ประวัติการเข้าเรียน</h3>
+      วันที่: <input type="date" id="historyDate">
+      ห้อง: <select id="historyRoom"></select>
+      วิชา: <select id="historySubject"></select>
+      <button onclick="loadHistory()">🔎 เรียกดูข้อมูล</button>
+      <div id="historyTable"></div>
     </div>
   </div>
 
-  <!-- Popup นำเข้าข้อมูล -->
-  <div id="popup" class="popup">
-    <div class="popup-content">
-      <h3 class="text-lg font-bold mb-3">ตรวจสอบข้อมูลที่นำเข้า</h3>
-      <div id="excelPreview" class="mb-4"></div>
-      <div class="flex justify-end space-x-2">
-        <button onclick="confirmImport()" class="bg-green-500 text-white px-4 py-2 rounded">ยืนยันข้อมูล</button>
-        <button onclick="closePopup()" class="bg-red-500 text-white px-4 py-2 rounded">ยกเลิก</button>
-      </div>
-    </div>
-  </div>
-
-  <script>
-    let classrooms = [];
-    let importData = [];
-
-    function addClassroom() {
-      const name = document.getElementById('className').value.trim();
-      if (!name) return alert("กรุณากรอกชื่อห้องเรียน");
-      classrooms.push({name, students: []});
-      renderClassrooms();
-      document.getElementById('className').value = "";
-    }
-
-    function renderClassrooms() {
-      const list = document.getElementById('classList');
-      list.innerHTML = "";
-      classrooms.forEach((c, i) => {
-        const li = document.createElement('li');
-        li.className = "border rounded p-3 flex justify-between items-center";
-        li.innerHTML = `
-          <div>
-            <span class="font-bold">${c.name}</span> 
-            <span class="text-gray-500">(${c.students.length} คน)</span>
-          </div>
-          <div class="space-x-2">
-            <button onclick="manageStudents(${i})" class="bg-blue-500 text-white px-3 py-1 rounded">จัดการนักเรียน</button>
-            <button onclick="editClass(${i})" class="bg-yellow-500 text-white px-3 py-1 rounded">แก้ไข</button>
-            <button onclick="deleteClass(${i})" class="bg-red-500 text-white px-3 py-1 rounded">ลบ</button>
-          </div>
-        `;
-        list.appendChild(li);
-      });
-    }
-
-    function manageStudents(index) {
-      const studentId = prompt("กรอกเลขประจำตัวนักเรียน");
-      const studentName = prompt("กรอกชื่อ-สกุลนักเรียน");
-      if (studentId && studentName) {
-        classrooms[index].students.push({id: studentId, name: studentName});
-        renderClassrooms();
-      }
-    }
-
-    function editClass(index) {
-      const newName = prompt("แก้ไขชื่อห้องเรียน", classrooms[index].name);
-      if (newName) {
-        classrooms[index].name = newName;
-        renderClassrooms();
-      }
-    }
-
-    function deleteClass(index) {
-      if (confirm("ยืนยันการลบห้องเรียนนี้หรือไม่?")) {
-        classrooms.splice(index, 1);
-        renderClassrooms();
-      }
-    }
-
-    // popup excel import
-    function openPopup(data) {
-      importData = data;
-      document.getElementById('excelPreview').innerHTML = JSON.stringify(data, null, 2);
-      document.getElementById('popup').style.display = "flex";
-    }
-    function closePopup() {
-      document.getElementById('popup').style.display = "none";
-    }
-    function confirmImport() {
-      alert("บันทึกข้อมูลเรียบร้อย!");
-      closePopup();
-    }
-  </script>
+<script>
+  function showTab(tab) {
+    document.querySelectorAll(".menu").forEach(m=>m.style.display="none");
+    document.getElementById(tab).style.display="block";
+  }
+  function toggleStatus(el,status){
+    el.parentNode.querySelectorAll(".status-btn").forEach(btn=>btn.classList.remove("active"));
+    el.classList.add("active");
+    el.setAttribute("data-status",status);
+  }
+  // ส่วน JS ของ google.script.run จะเหมือนโค้ดที่ผมให้ไปก่อนหน้านี้ครับ
+</script>
 </body>
 </html>
