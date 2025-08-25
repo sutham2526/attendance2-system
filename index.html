@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <title>ระบบเช็คชื่อเข้าเรียน</title>
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <style>
+    body {
+      font-family: "Prompt", sans-serif;
+      margin: 0; padding: 0;
+      background: linear-gradient(135deg, #74ebd5 0%, #ACB6E5 100%);
+      color: #333;
+    }
+    header {
+      background: #2d3436;
+      color: #fff;
+      padding: 20px;
+      text-align: center;
+      font-size: 24px;
+      letter-spacing: 1px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+    }
+    .container {
+      padding: 20px;
+      max-width: 1200px;
+      margin: auto;
+    }
+    .menu-btn {
+      display: inline-block;
+      margin: 5px;
+      padding: 12px 20px;
+      background: linear-gradient(45deg, #ff6b6b, #feca57);
+      border: none; border-radius: 8px;
+      font-size: 16px; font-weight: bold;
+      color: #fff;
+      cursor: pointer;
+      transition: 0.3s;
+    }
+    .menu-btn:hover { transform: scale(1.05); }
+    .menu {
+      display: none;
+      margin-top: 20px;
+      padding: 20px;
+      background: #fff;
+      border-radius: 16px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+      animation: fadeIn 0.5s ease;
+    }
+    h3 { color: #2d3436; }
+    input, select, button {
+      padding: 8px;
+      border-radius: 8px;
+      border: 1px solid #ccc;
+      margin: 5px 0;
+    }
+    button.save-btn {
+      background: linear-gradient(45deg, #1dd1a1, #10ac84);
+      color: #fff; border: none; font-weight: bold;
+    }
+    button.save-btn:hover { opacity: 0.9; }
+    .student-card {
+      display: flex; align-items: center;
+      justify-content: space-between;
+      background: #f1f2f6;
+      padding: 10px;
+      margin: 5px 0;
+      border-radius: 12px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    }
+    .status-btn {
+      margin: 2px;
+      padding: 8px 12px;
+      border-radius: 50%;
+      color: #fff; font-weight: bold;
+      cursor: pointer;
+      opacity: 0.4; transition: 0.2s;
+    }
+    .status-btn.active { opacity: 1; transform: scale(1.1); }
+    .มา { background:#2ecc71; }
+    .ขาด { background:#e74c3c; }
+    .ลากิจ { background:#9b59b6; }
+    .ลาป่วย { background:#e67e22; }
+    .กิจกรรม { background:#f1c40f; color:#000; }
+    table {
+      width: 100%; border-collapse: collapse; margin-top: 15px;
+      background: #fff; border-radius: 12px; overflow: hidden;
+    }
+    th, td {
+      padding: 10px; border-bottom: 1px solid #ddd; text-align: center;
+    }
+    th { background: #74b9ff; color:#fff; }
+    @keyframes fadeIn {
+      from {opacity:0; transform:translateY(10px);}
+      to {opacity:1; transform:translateY(0);}
+    }
+  </style>
+</head>
+<body>
+  <header>📘 ระบบเช็คชื่อเข้าเรียน</header>
+  <div class="container">
+    <button class="menu-btn" onclick="showTab('menu1')">✅ บันทึกการเข้าเรียน</button>
+    <button class="menu-btn" onclick="showTab('menu2')">⚙️ จัดการข้อมูล</button>
+    <button class="menu-btn" onclick="showTab('menu3')">📊 ประวัติการเข้าเรียน</button>
+
+    <!-- เมนู 1 -->
+    <div id="menu1" class="menu">
+      <h3>✅ บันทึกการเข้าเรียน</h3>
+      วันที่: <input type="date" id="dateInput" max="<?= new Date().toISOString().split('T')[0] ?>">
+      <br>ห้อง: <select id="roomSelect"></select>
+      วิชา: <select id="subjectSelect"></select>
+      <button onclick="loadStudents()">📋 โหลดรายชื่อ</button>
+      <div id="studentList"></div>
+      <button class="save-btn" onclick="saveAttendance()">💾 บันทึก</button>
+    </div>
+
+    <!-- เมนู 2 -->
+    <div id="menu2" class="menu">
+      <h3>⚙️ จัดการข้อมูล</h3>
+      <h4>🏫 ห้องเรียน</h4>
+      <div id="roomManage"></div>
+      <h4>📚 รายวิชา</h4>
+      <div id="subjectManage"></div>
+    </div>
+
+    <!-- เมนู 3 -->
+    <div id="menu3" class="menu">
+      <h3>📊 ประวัติการเข้าเรียน</h3>
+      วันที่: <input type="date" id="historyDate">
+      ห้อง: <select id="historyRoom"></select>
+      วิชา: <select id="historySubject"></select>
+      <button onclick="loadHistory()">🔎 เรียกดูข้อมูล</button>
+      <div id="historyTable"></div>
+    </div>
+  </div>
+
+<script>
+  function showTab(tab) {
+    document.querySelectorAll(".menu").forEach(m=>m.style.display="none");
+    document.getElementById(tab).style.display="block";
+  }
+  function toggleStatus(el,status){
+    el.parentNode.querySelectorAll(".status-btn").forEach(btn=>btn.classList.remove("active"));
+    el.classList.add("active");
+    el.setAttribute("data-status",status);
+  }
+  // ส่วน JS ของ google.script.run จะเหมือนโค้ดที่ผมให้ไปก่อนหน้านี้ครับ
+</script>
+</body>
+</html>
