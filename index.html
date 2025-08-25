@@ -1,259 +1,118 @@
-<!DOCTYPE html>
-<html lang="th">
-<head>
-<meta charset="UTF-8">
-<title>ระบบเช็คชื่อ & จัดการห้องเรียน</title>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
-<style>
-body{font-family:"Sarabun",sans-serif;background:#f7f9fc;margin:0;padding:0;}
-header{background:#4a90e2;color:white;padding:15px;text-align:center;font-size:22px;}
-nav{display:flex;justify-content:center;margin:20px;}
-nav button{margin:0 10px;padding:10px 20px;border:none;border-radius:8px;cursor:pointer;background:#50c878;color:white;font-size:16px;}
-section{display:none;padding:20px;}
-section.active{display:block;}
-table{border-collapse:collapse;width:100%;margin-top:10px;background:white;}
-th,td{border:1px solid #ddd;padding:8px;text-align:left;}
-th{background:#4a90e2;color:white;}
-.btn{padding:6px 12px;border:none;border-radius:6px;cursor:pointer;}
-.btn-green{background:#50c878;color:white;}
-.btn-blue{background:#4a90e2;color:white;}
-.btn-red{background:#e94e77;color:white;}
-</style>
-</head>
-<body>
+/** ===== Utilities ===== */
+function _ss(){ return SpreadsheetApp.getActiveSpreadsheet(); }
+function _sh(name){ return _ss().getSheetByName(name) || _ss().insertSheet(name); }
 
-<header>📚 ระบบเช็คชื่อ & จัดการห้องเรียน</header>
-
-<nav>
-  <button onclick="showSection('attendance')">เช็คชื่อ</button>
-  <button onclick="showSection('manageClasses')">จัดการห้องเรียน</button>
-  <button onclick="showSection('report')">รายงานสรุปผล</button>
-</nav>
-
-<!-- เช็คชื่อ -->
-<section id="attendance" class="active">
-<h2>เช็คชื่อเข้าเรียน</h2>
-<label>เลือกห้องเรียน:</label>
-<select id="classSelect" onchange="loadStudentsForAttendance()"></select>
-<div id="attendanceArea"></div>
-<button class="btn btn-green" onclick="saveAttendance()">บันทึกการเช็คชื่อ</button>
-</section>
-
-<!-- จัดการห้องเรียน -->
-<section id="manageClasses">
-<h2>จัดการห้องเรียน</h2>
-<input type="text" id="newClassName" placeholder="ชื่อห้องเรียน">
-<button class="btn btn-green" onclick="addClass()">เพิ่มห้องเรียน</button>
-<div id="classList"></div>
-</section>
-
-<!-- รายงาน -->
-<section id="report">
-<h2>📊 รายงานสรุปผล</h2>
-<label>เลือกห้องเรียน:</label>
-<select id="reportClassroom"></select>
-<label>จากวันที่:</label>
-<input type="date" id="startDate">
-<label>ถึงวันที่:</label>
-<input type="date" id="endDate">
-<button onclick="loadReport()">แสดงรายงาน</button>
-
-<h3>ตารางสรุปผล</h3>
-<table id="reportTable">
-<thead>
-<tr>
-<th>ชื่อนักเรียน</th>
-<th>มา</th>
-<th>ขาด</th>
-<th>สาย</th>
-<th>ลากิจ</th>
-<th>ลาป่วย</th>
-<th>กิจกรรม</th>
-<th>% มาเรียน</th>
-</tr>
-</thead>
-<tbody></tbody>
-</table>
-
-<h3>กราฟสรุปผล</h3>
-<canvas id="reportChart" width="400" height="200"></canvas>
-<button class="btn btn-blue" onclick="exportExcel()">Export Excel</button>
-<button class="btn btn-red" onclick="exportPDF()">Export PDF</button>
-</section>
-
-<script>
-// =================== ตัวแปรฐานข้อมูล ===================
-let classrooms={}; // ห้องเรียน -> list นักเรียน [{id,name}]
-let attendanceData=[]; // สำหรับเช็คชื่อ
-
-// =================== แสดง Section ===================
-function showSection(id){
-  document.querySelectorAll("section").forEach(sec=>sec.classList.remove("active"));
-  document.getElementById(id).classList.add("active");
-  if(id=="attendance") refreshClassSelect();
-  if(id=="manageClasses") renderClasses();
-  if(id=="report") refreshReportClass();
+function _toJSONP(callback, obj){
+  var text = callback + '(' + JSON.stringify(obj) + ');';
+  return ContentService.createTextOutput(text).setMimeType(ContentService.MimeType.JAVASCRIPT);
+}
+function _rows_(sheet){
+  var v = sheet.getDataRange().getValues();
+  return v;
 }
 
-// =================== จัดการห้องเรียน ===================
-function addClass(){
-  let name=document.getElementById("newClassName").value.trim();
-  if(!name) return alert("กรุณากรอกชื่อห้องเรียน");
-  if(classrooms[name]) return alert("มีห้องเรียนนี้แล้ว");
-  classrooms[name]=[];
-  document.getElementById("newClassName").value="";
-  renderClasses(); refreshClassSelect(); refreshReportClass();
-}
-
-function renderClasses(){
-  let container=document.getElementById("classList"); container.innerHTML="";
-  for(let c in classrooms){
-    let div=document.createElement("div");
-    div.innerHTML=`<b>${c}</b> (${classrooms[c].length})
-    <button class='btn btn-blue' onclick="manageStudents('${c}')">จัดการนักเรียน</button>
-    <button class='btn btn-red' onclick="deleteClass('${c}')">ลบ</button>`;
-    container.appendChild(div);
+/** ===== Router ===== */
+function doGet(e){
+  var action = e.parameter.action || '';
+  var cb = e.parameter.callback || 'callback';
+  try{
+    if(action==='getAll') return _toJSONP(cb, getAll());
+    if(action==='saveClasses') return _toJSONP(cb, saveClasses_(e));
+    if(action==='deleteAllClasses') return _toJSONP(cb, deleteAllClasses_());
+    if(action==='saveSubjects') return _toJSONP(cb, saveSubjects_(e));
+    if(action==='deleteAllSubjects') return _toJSONP(cb, deleteAllSubjects_());
+    if(action==='saveAttendance') return _toJSONP(cb, saveAttendance_(e));
+    if(action==='getHistory') return _toJSONP(cb, getHistory_(e));
+    return _toJSONP(cb, {error:'Unknown action'});
+  }catch(err){
+    return _toJSONP(cb, {error:String(err)});
   }
 }
 
-function deleteClass(c){ if(confirm("ลบห้องเรียน "+c+" ?")){ delete classrooms[c]; renderClasses(); refreshClassSelect(); refreshReportClass(); } }
-
-// =================== จัดการนักเรียน ===================
-function manageStudents(className){
-  let list=classrooms[className];
-  let html=`<h3>นักเรียนในห้อง ${className}</h3>
-  <input id="stuId" placeholder="รหัส">
-  <input id="stuName" placeholder="ชื่อ-สกุล">
-  <button class="btn btn-green" onclick="addStudent('${className}')">เพิ่ม</button>
-  <table><tr><th>รหัส</th><th>ชื่อ-สกุล</th></tr>`;
-  list.forEach(s=>html+=`<tr><td>${s.id}</td><td>${s.name}</td></tr>`);
-  html+="</table>";
-  document.getElementById("classList").innerHTML=html;
-}
-
-function addStudent(className){
-  let id=document.getElementById("stuId").value.trim();
-  let name=document.getElementById("stuName").value.trim();
-  if(!id||!name)return alert("กรุณากรอกรหัสและชื่อ");
-  classrooms[className].push({id,name});
-  manageStudents(className);
-}
-
-// =================== เช็คชื่อ ===================
-function refreshClassSelect(){
-  let sel=document.getElementById("classSelect"); sel.innerHTML="<option value=''>--เลือกห้องเรียน--</option>";
-  for(let c in classrooms) sel.innerHTML+=`<option>${c}</option>`;
-}
-
-function loadStudentsForAttendance(){
-  let c=document.getElementById("classSelect").value;
-  if(!c) return;
-  let list=classrooms[c];
-  
-  attendanceData = list.map(s => ({id:s.id, name:s.name, status: "ขาด"})); // default ขาด
-  let html="<table><tr><th>รหัส</th><th>ชื่อ</th><th>สถานะ</th></tr>";
-  
-  list.forEach((s,i)=>{
-    html+=`<tr>
-      <td>${s.id}</td>
-      <td>${s.name}</td>
-      <td>
-        <select onchange="attendanceData[${i}].status=this.value" style="padding:4px;">
-          <option value='มา' style="background:#50c878;color:white;">มา</option>
-          <option value='ขาด' selected style="background:#e94e77;color:white;">ขาด</option>
-          <option value='สาย' style="background:#f1c40f;color:white;">สาย</option>
-          <option value='ลากิจ' style="background:#9b59b6;color:white;">ลากิจ</option>
-          <option value='ลาป่วย' style="background:#e67e22;color:white;">ลาป่วย</option>
-          <option value='กิจกรรม' style="background:#f39c12;color:white;">กิจกรรม</option>
-        </select>
-      </td>
-    </tr>`;
+/** ===== Handlers ===== */
+function getAll(){
+  var rooms = _rows_(_sh('Rooms')).slice(1).map(function(r){ return {name: String(r[0]||'').trim()}; }).filter(function(r){ return r.name; });
+  var subjects = _rows_(_sh('Subjects')).slice(1).map(function(r){ return String(r[0]||'').trim(); }).filter(String);
+  var studentsRows = _rows_(_sh('Students')).slice(1);
+  var studentsByRoom = {};
+  studentsRows.forEach(function(r){
+    var room = String(r[0]||'').trim();
+    var number = String(r[1]||'').trim();
+    var sid = String(r[2]||'').trim();
+    var name = String(r[3]||'').trim();
+    if(!room || !number || !sid || !name) return;
+    (studentsByRoom[room] = studentsByRoom[room] || []).push({number:number, id:sid, name:name});
   });
-  html+="</table>";
-  document.getElementById("attendanceArea").innerHTML=html;
+  return {rooms:rooms, subjects:subjects, studentsByRoom:studentsByRoom};
 }
 
-function saveAttendance(){
-  if(attendanceData.length===0) return alert("ไม่มีข้อมูลนักเรียน");
-  console.log("บันทึกเช็คชื่อ", attendanceData);
-  alert("บันทึกเรียบร้อย! (สามารถส่งไป Google Sheets ได้)");
-}
-
-// =================== รายงาน ===================
-function refreshReportClass(){
-  let sel=document.getElementById("reportClassroom"); sel.innerHTML="<option value=''>--เลือกห้องเรียน--</option>";
-  for(let c in classrooms) sel.innerHTML+=`<option>${c}</option>`;
-}
-
-function loadReport(){
-  let className=document.getElementById("reportClassroom").value;
-  if(!className)return alert("กรุณาเลือกห้องเรียน");
-
-  let report={};
-  attendanceData.forEach(s=>{
-    if(!report[s.name]) report[s.name]={มา:0,ขาด:0,สาย:0,ลากิจ:0,ลาป่วย:0,กิจกรรม:0};
-    report[s.name][s.status] += 1;
-  });
-
-  let reportArray=[];
-  for(let name in report){
-    let r=report[name];
-    let total = r.มา+r.ขาด+r.สาย+r.ลากิจ+r.ลาป่วย+r.กิจกรรม;
-    let percent = total>0 ? Math.round((r.มา/total)*100) : 0;
-    reportArray.push({name,...r,percent});
+function saveClasses_(e){
+  var data = JSON.parse(e.parameter.data || '{}');
+  var rooms = data.rooms || [];
+  var sbr = data.studentsByRoom || {};
+  var shR = _sh('Rooms'); shR.clear(); shR.getRange(1,1,1,1).setValues([['RoomName']]);
+  if(rooms.length){
+    shR.getRange(2,1,rooms.length,1).setValues(rooms.map(function(r){return [r.name];}));
   }
-  renderReport(reportArray);
-}
-
-function renderReport(report){
-  let tbody=document.getElementById("reportTable").querySelector("tbody"); tbody.innerHTML="";
-  report.forEach(r=>{
-    tbody.innerHTML+=`<tr>
-      <td>${r.name}</td>
-      <td>${r.มา}</td>
-      <td>${r.ขาด}</td>
-      <td>${r.สาย}</td>
-      <td>${r.ลากิจ}</td>
-      <td>${r.ลาป่วย}</td>
-      <td>${r.กิจกรรม}</td>
-      <td>${r.percent}</td>
-    </tr>`;
+  var shS = _sh('Students'); shS.clear(); shS.getRange(1,1,1,4).setValues([['Room','Number','StudentId','Name']]);
+  var rows = [];
+  Object.keys(sbr).forEach(function(room){
+    (sbr[room]||[]).forEach(function(s){
+      rows.push([room, s.number, s.id, s.name]);
+    });
   });
+  if(rows.length) shS.getRange(2,1,rows.length,4).setValues(rows);
+  return {success:true, message:'Saved classes & students'};
+}
 
-  const ctx=document.getElementById("reportChart").getContext("2d");
-  if(window.myChart) window.myChart.destroy();
-  window.myChart = new Chart(ctx,{
-    type:'bar',
-    data:{
-      labels:report.map(r=>r.name),
-      datasets:[
-        {label:"มา",data:report.map(r=>r.มา),backgroundColor:"#50c878"},
-        {label:"ขาด",data:report.map(r=>r.ขาด),backgroundColor:"#e94e77"},
-        {label:"สาย",data:report.map(r=>r.สาย),backgroundColor:"#f1c40f"},
-        {label:"ลากิจ",data:report.map(r=>r.ลากิจ),backgroundColor:"#9b59b6"},
-        {label:"ลาป่วย",data:report.map(r=>r.ลาป่วย),backgroundColor:"#e67e22"},
-        {label:"กิจกรรม",data:report.map(r=>r.กิจกรรม),backgroundColor:"#f39c12"}
-      ]
-    },
-    options:{responsive:true,plugins:{legend:{position:'top'}},scales:{y:{beginAtZero:true}}}
+function deleteAllClasses_(){
+  _sh('Rooms').clear();
+  _sh('Students').clear();
+  _sh('Rooms').getRange(1,1,1,1).setValues([['RoomName']]);
+  _sh('Students').getRange(1,1,1,4).setValues([['Room','Number','StudentId','Name']]);
+  return {success:true};
+}
+
+function saveSubjects_(e){
+  var data = JSON.parse(e.parameter.data || '{}');
+  var arr = data.subjects || [];
+  var sh = _sh('Subjects'); sh.clear();
+  sh.getRange(1,1,1,1).setValues([['SubjectName']]);
+  if(arr.length) sh.getRange(2,1,arr.length,1).setValues(arr.map(function(s){return [s];}));
+  return {success:true};
+}
+
+function deleteAllSubjects_(){
+  var sh = _sh('Subjects'); sh.clear();
+  sh.getRange(1,1,1,1).setValues([['SubjectName']]);
+  return {success:true};
+}
+
+function saveAttendance_(e){
+  var data = JSON.parse(e.parameter.data || '{}');
+  var date = data.date, room = data.room, subject = data.subject;
+  var rows = data.rows || [];
+  var sh = _sh('Attendance');
+  if(sh.getLastRow()===0){
+    sh.getRange(1,1,1,7).setValues([['Date','Room','Subject','Number','StudentId','Name','Status']]);
+  }
+  var values = rows.map(function(r){
+    return [date, room, subject, r.number, r.id, r.name, r.status];
   });
+  if(values.length) sh.getRange(sh.getLastRow()+1, 1, values.length, 7).setValues(values);
+  return {success:true, inserted: values.length};
 }
 
-// =================== Export ===================
-function exportExcel(){
-  let wb=XLSX.utils.book_new();
-  let tbl=document.getElementById("reportTable");
-  let ws=XLSX.utils.table_to_sheet(tbl);
-  XLSX.utils.book_append_sheet(wb,ws,"Report");
-  XLSX.writeFile(wb,"Attendance_Report.xlsx");
+function getHistory_(e){
+  var data = JSON.parse(e.parameter.data || '{}');
+  var date = data.date, room = data.room, subject = data.subject;
+  var sh = _sh('Attendance');
+  if(sh.getLastRow()===0) return [];
+  var vals = _rows_(sh).slice(1).filter(function(r){
+    var d = Utilities.formatDate(new Date(r[0]), Session.getScriptTimeZone(), 'yyyy-MM-dd');
+    return d===date && String(r[1])===room && String(r[2])===subject;
+  }).map(function(r){
+    return {date:r[0], room:r[1], subject:r[2], number:r[3], studentId:r[4], name:r[5], status:r[6]};
+  });
+  return vals;
 }
-
-function exportPDF(){
-  let element=document.getElementById("reportTable");
-  html2pdf().set({margin:0.5,filename:"Attendance_Report.pdf",html2canvas:{scale:2}}).from(element).save();
-}
-</script>
-</body>
-</html>
