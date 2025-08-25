@@ -91,7 +91,7 @@ tr:nth-child(even) td{background:#fcfdff;}
         </div>
         <div>
           <br/>
-          <button class="btn" onclick="loadStudentsForAttendance()">โหลดรายชื่อ</button>
+          <button class="btn" id="loadAttBtn" onclick="loadStudentsForAttendance()">โหลดรายชื่อ</button>
         </div>
       </div>
     </div>
@@ -118,6 +118,7 @@ tr:nth-child(even) td{background:#fcfdff;}
       </div>
     </div>
   </section>
+
   <!-- ============ SECTION: Manage ============ -->
   <section id="manage">
     <div class="card">
@@ -329,8 +330,8 @@ function renderAttTable(){
       <td>${s.id}</td>
       <td>${s.name}</td>
       <td>
-        <span class="status-btn มา" onclick="setStatus(${i},'มา')">/</span>
-        <span class="status-btn ขาด active" onclick="setStatus(${i},'ขาด')">ข</span>
+        <span class="status-btn มา active" onclick="setStatus(${i},'มา')">/</span>
+        <span class="status-btn ขาด" onclick="setStatus(${i},'ขาด')">ข</span>
         <span class="status-btn สาย" onclick="setStatus(${i},'สาย')">ส</span>
         <span class="status-btn ลากิจ" onclick="setStatus(${i},'ลากิจ')">ล</span>
         <span class="status-btn ลาป่วย" onclick="setStatus(${i},'ลาป่วย')">ป</span>
@@ -361,11 +362,36 @@ async function saveAttendance(){
   const room = document.getElementById('attRoom').value;
   const subject = document.getElementById('attSubject').value;
   if(!date || !room || !subject || CURRENT_ATT.length===0){ Swal.fire('กรุณากรอกข้อมูลให้ครบ'); return; }
+  // แจ้งเตือนกำลังบันทึก
+  Swal.fire({
+    title: 'กำลังบันทึกข้อมูล...',
+    allowOutsideClick: false,
+    didOpen: () => { Swal.showLoading(); }
+  });
+
   const payload = encodeURIComponent(JSON.stringify({date,room,subject,rows:CURRENT_ATT}));
   await jsonp(`action=saveAttendance&data=${payload}`);
+
   Swal.fire('✅','บันทึกสำเร็จ','success');
 }
+// รีเซ็ตข้อมูลเมื่อเปลี่ยนวันที่
+document.getElementById('attDate').addEventListener('change', ()=>{
+  CURRENT_ATT = [];
+  renderAttTable(); // ล้างตาราง
+});
 
+// รีเซ็ตข้อมูลเมื่อเปลี่ยนห้องเรียนหรือรายวิชา
+document.getElementById('attRoom').addEventListener('change', ()=>{ CURRENT_ATT = []; renderAttTable(); });
+document.getElementById('attSubject').addEventListener('change', ()=>{ CURRENT_ATT = []; renderAttTable(); });
+
+function loadStudentsForAttendance(){
+  const date = document.getElementById('attDate').value;
+  const room = document.getElementById('attRoom').value;
+  const subject = document.getElementById('attSubject').value;
+
+  if(!date || !room || !subject){ Swal.fire('กรุณาเลือกวันที่ ห้องเรียน และรายวิชาให้ครบ'); return; }
+
+  
 /* =========================
    Manage: Classes & Students
 ========================= */
@@ -685,3 +711,4 @@ function exportPDF(){
 </script>
 </body>
 </html>
+
