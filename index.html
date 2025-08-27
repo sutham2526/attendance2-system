@@ -1,1 +1,1614 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ระบบบันทึกการเข้าเรียน</title>
+    <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Sarabun', sans-serif;
+        }
+
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            color: white;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .header p {
+            font-size: 1.2rem;
+            opacity: 0.9;
+        }
+
+        .nav-tabs {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+        }
+
+        .nav-tab {
+            padding: 15px 30px;
+            border: none;
+            border-radius: 15px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            color: white;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.3);
+            min-width: 200px;
+        }
+
+        .nav-tab.attendance {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+        }
+
+        .nav-tab.manage {
+            background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
+        }
+
+        .nav-tab.history {
+            background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+        }
+
+        .nav-tab.reports {
+            background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%);
+            color: #333;
+            text-shadow: none;
+        }
+
+        .nav-tab:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+        }
+
+        .nav-tab.active {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+        }
+
+        .tab-content {
+            display: none;
+            animation: fadeIn 0.5s ease-in;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .card {
+            background: white;
+            border-radius: 20px;
+            padding: 25px;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.1);
+            margin-bottom: 25px;
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+
+        .card-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #f0f0f0;
+        }
+
+        .card-header i {
+            font-size: 1.5rem;
+            margin-right: 15px;
+            padding: 10px;
+            border-radius: 10px;
+            color: white;
+        }
+
+        .card-header h3 {
+            font-size: 1.4rem;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #555;
+            font-size: 1.1rem;
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 1.1rem;
+            font-family: 'Sarabun', sans-serif;
+            transition: all 0.3s ease;
+        }
+
+        .form-control:focus {
+            outline: none;
+            border-color: #4facfe;
+            box-shadow: 0 0 0 3px rgba(79, 172, 254, 0.1);
+        }
+
+        .btn {
+            padding: 12px 25px;
+            border: none;
+            border-radius: 10px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-family: 'Sarabun', sans-serif;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
+            color: white;
+        }
+
+        .btn-danger {
+            background: linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%);
+            color: white;
+        }
+
+        .btn-warning {
+            background: linear-gradient(135deg, #feca57 0%, #ff9ff3 100%);
+            color: white;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(0,0,0,0.2);
+        }
+
+        .student-list {
+            max-height: 500px;
+            overflow-y: auto;
+        }
+
+        .student-item {
+            display: flex;
+            align-items: center;
+            padding: 15px;
+            border: 2px solid #f0f0f0;
+            border-radius: 15px;
+            margin-bottom: 10px;
+            background: #fafafa;
+            transition: all 0.3s ease;
+        }
+
+        .student-item:hover {
+            background: #f0f8ff;
+            border-color: #4facfe;
+        }
+
+        .student-info {
+            flex: 1;
+            display: grid;
+            grid-template-columns: 60px 120px 1fr;
+            gap: 15px;
+            align-items: center;
+        }
+
+        .student-no {
+            font-weight: 600;
+            color: #666;
+            text-align: center;
+        }
+
+        .student-id {
+            font-weight: 600;
+            color: #333;
+        }
+
+        .student-name {
+            font-weight: 500;
+            color: #333;
+        }
+
+        .status-buttons {
+            display: flex;
+            gap: 8px;
+        }
+
+        .status-btn {
+            width: 35px;
+            height: 35px;
+            border: none;
+            border-radius: 50%;
+            font-weight: 700;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            color: black;
+            text-shadow: none;
+        }
+
+        .status-btn.present {
+            background: linear-gradient(135deg, #2ecc71, #27ae60);
+        }
+
+        .status-btn.absent {
+            background: linear-gradient(135deg, #e74c3c, #c0392b);
+        }
+
+        .status-btn.leave {
+            background: linear-gradient(135deg, #9b59b6, #8e44ad);
+        }
+
+        .status-btn.sick {
+            background: linear-gradient(135deg, #3498db, #2980b9);
+        }
+
+        .status-btn.activity {
+            background: linear-gradient(135deg, #f39c12, #e67e22);
+        }
+
+        .status-btn:not(.active) {
+            opacity: 0.3;
+            transform: scale(0.9);
+        }
+
+        .status-btn.active {
+            transform: scale(1.1);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+        }
+
+        .grid-2 {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 25px;
+        }
+
+        .grid-3 {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 25px;
+        }
+
+        .stats-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            text-align: center;
+            padding: 20px;
+            border-radius: 15px;
+        }
+
+        .stats-number {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 5px;
+        }
+
+        .stats-label {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+
+        .table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        .table th,
+        .table td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+
+        .table th {
+            background: #f8f9fa;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 1000;
+        }
+
+        .modal.show {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            max-width: 500px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+
+        .file-input-wrapper {
+            position: relative;
+            display: inline-block;
+            cursor: pointer;
+            width: 100%;
+        }
+
+        .file-input {
+            position: absolute;
+            opacity: 0;
+            width: 100%;
+            height: 100%;
+            cursor: pointer;
+        }
+
+        .file-input-display {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            border: 2px dashed #4facfe;
+            border-radius: 10px;
+            background: #f8f9ff;
+            color: #4facfe;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .file-input-display:hover {
+            background: #e6f3ff;
+            border-color: #0066cc;
+        }
+
+        .chart-container {
+            position: relative;
+            height: 300px;
+            margin: 20px 0;
+        }
+
+        @media (max-width: 768px) {
+            .grid-2 {
+                grid-template-columns: 1fr;
+            }
+            
+            .student-info {
+                grid-template-columns: 50px 100px 1fr;
+                gap: 10px;
+            }
+            
+            .status-buttons {
+                gap: 5px;
+            }
+            
+            .status-btn {
+                width: 35px;
+                height: 35px;
+                font-size: 0.9rem;
+            }
+            
+            .nav-tabs {
+                flex-direction: column;
+                align-items: center;
+            }
+            
+            .nav-tab {
+                min-width: 250px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1><i class="fas fa-graduation-cap"></i> ระบบบันทึกการเข้าเรียน</h1>
+            <p>Student Attendance Management System</p>
+        </div>
+
+        <div class="nav-tabs">
+            <button class="nav-tab attendance active" onclick="showTab('attendance')">
+                <i class="fas fa-user-check"></i> บันทึกการเข้าเรียน
+            </button>
+            <button class="nav-tab manage" onclick="showTab('manage')">
+                <i class="fas fa-cogs"></i> จัดการข้อมูล
+            </button>
+            <button class="nav-tab history" onclick="showTab('history')">
+                <i class="fas fa-history"></i> ประวัติการเข้าเรียน
+            </button>
+            <button class="nav-tab reports" onclick="showTab('reports')">
+                <i class="fas fa-chart-bar"></i> รายงานสรุปผล
+            </button>
+        </div>
+
+        <!-- บันทึกการเข้าเรียน -->
+        <div id="attendance" class="tab-content active">
+            <div class="card">
+                <div class="card-header">
+                    <i class="fas fa-calendar-check" style="background: linear-gradient(135deg, #4facfe, #00f2fe);"></i>
+                    <h3>บันทึกการเข้าเรียน</h3>
+                </div>
+                
+                <div class="grid-3">
+                    <div class="form-group">
+                        <label class="form-label">วันที่</label>
+                        <input type="date" id="attendanceDate" class="form-control" onchange="resetAttendanceData()">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">ห้องเรียน</label>
+                        <select id="attendanceClass" class="form-control" onchange="checkLoadConditions()">
+                            <option value="">เลือกห้องเรียน</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">รายวิชา</label>
+                        <select id="attendanceSubject" class="form-control" onchange="checkLoadConditions()">
+                            <option value="">เลือกรายวิชา</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div id="studentsList" class="student-list" style="display: none;">
+                    <h4 style="margin-bottom: 20px; color: #333;">รายชื่อนักเรียน</h4>
+                    <div id="studentsContainer"></div>
+                    <button class="btn btn-success" onclick="saveAttendance()" style="width: 100%; margin-top: 20px; font-size: 1.2rem;">
+                        <i class="fas fa-save"></i> บันทึกการเข้าเรียน
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- จัดการข้อมูล -->
+        <div id="manage" class="tab-content">
+            <div class="grid-2">
+                <!-- จัดการห้องเรียน -->
+                <div class="card">
+                    <div class="card-header">
+                        <i class="fas fa-school" style="background: linear-gradient(135deg, #43e97b, #38f9d7);"></i>
+                        <h3>จัดการห้องเรียน</h3>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">ชื่อห้องเรียน</label>
+                        <input type="text" id="newClassName" class="form-control" placeholder="เช่น ม.1/1">
+                    </div>
+                    <button class="btn btn-success" onclick="addClass()" style="width: 100%; margin-bottom: 20px;">
+                        <i class="fas fa-plus"></i> เพิ่มห้องเรียน
+                    </button>
+
+                    <div id="classListContainer">
+                        <h4 style="margin-bottom: 15px;">รายการห้องเรียน</h4>
+                        <div id="classList"></div>
+                    </div>
+                </div>
+
+                <!-- จัดการรายวิชา -->
+                <div class="card">
+                    <div class="card-header">
+                        <i class="fas fa-book" style="background: linear-gradient(135deg, #fa709a, #fee140);"></i>
+                        <h3>จัดการรายวิชา</h3>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">ชื่อรายวิชา</label>
+                        <input type="text" id="newSubjectName" class="form-control" placeholder="เช่น คณิตศาสตร์">
+                    </div>
+                    <button class="btn btn-success" onclick="addSubject()" style="width: 100%; margin-bottom: 20px;">
+                        <i class="fas fa-plus"></i> เพิ่มรายวิชา
+                    </button>
+
+                    <div id="subjectListContainer">
+                        <h4 style="margin-bottom: 15px;">รายการวิชา</h4>
+                        <div id="subjectList"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- จัดการนักเรียน -->
+            <div class="card">
+                <div class="card-header">
+                    <i class="fas fa-users" style="background: linear-gradient(135deg, #a8edea, #fed6e3);"></i>
+                    <h3>จัดการนักเรียน</h3>
+                </div>
+
+                <div class="grid-2" style="margin-bottom: 20px;">
+                    <div>
+                        <label class="form-label">เลือกห้องเรียน</label>
+                        <select id="studentClassSelect" class="form-control" onchange="loadStudents()">
+                            <option value="">เลือกห้องเรียน</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="form-label">นำเข้าจาก Excel</label>
+                        <div class="file-input-wrapper">
+                            <input type="file" id="excelFile" class="file-input" accept=".xlsx,.xls" onchange="importFromExcel()">
+                            <div class="file-input-display">
+                                <i class="fas fa-file-excel" style="margin-right: 10px;"></i>
+                                เลือกไฟล์ Excel
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="grid-3" style="margin-bottom: 20px;">
+                    <div class="form-group">
+                        <label class="form-label">เลขที่</label>
+                        <input type="number" id="newStudentNo" class="form-control" placeholder="1">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">เลขประจำตัว</label>
+                        <input type="text" id="newStudentId" class="form-control" placeholder="123456">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">ชื่อ-สกุล</label>
+                        <input type="text" id="newStudentName" class="form-control" placeholder="นายสมชาย ใจดี">
+                    </div>
+                </div>
+
+                <div style="display: flex; gap: 10px; margin-bottom: 20px;">
+                    <button class="btn btn-success" onclick="addStudent()" style="flex: 1;">
+                        <i class="fas fa-user-plus"></i> เพิ่มนักเรียน
+                    </button>
+                    <button class="btn btn-danger" onclick="clearAllStudents()" style="flex: 1;">
+                        <i class="fas fa-trash"></i> ลบข้อมูลทั้งหมด
+                    </button>
+                </div>
+
+                <div id="studentListContainer">
+                    <h4 style="margin-bottom: 15px;">รายชื่อนักเรียน</h4>
+                    <div id="studentManageList"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ประวัติการเข้าเรียน -->
+        <div id="history" class="tab-content">
+            <div class="card">
+                <div class="card-header">
+                    <i class="fas fa-search" style="background: linear-gradient(135deg, #fa709a, #fee140);"></i>
+                    <h3>ค้นหาประวัติการเข้าเรียน</h3>
+                </div>
+                
+                <div class="grid-3">
+                    <div class="form-group">
+                        <label class="form-label">วันที่</label>
+                        <input type="date" id="historyDate" class="form-control">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">ห้องเรียน</label>
+                        <select id="historyClass" class="form-control">
+                            <option value="">เลือกห้องเรียน</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">รายวิชา</label>
+                        <select id="historySubject" class="form-control">
+                            <option value="">เลือกรายวิชา</option>
+                        </select>
+                    </div>
+                </div>
+
+                <button class="btn btn-primary" onclick="searchHistory()" style="width: 100%; margin-bottom: 20px;">
+                    <i class="fas fa-search"></i> เรียกดูข้อมูล
+                </button>
+
+                <div id="historyResults"></div>
+            </div>
+        </div>
+
+        <!-- รายงานสรุปผล -->
+        <div id="reports" class="tab-content">
+            <div class="card">
+                <div class="card-header">
+                    <i class="fas fa-chart-pie" style="background: linear-gradient(135deg, #a8edea, #fed6e3);"></i>
+                    <h3>รายงานสรุปผล</h3>
+                </div>
+
+                <div class="grid-3" style="margin-bottom: 20px;">
+                    <div class="form-group">
+                        <label class="form-label">วันที่เริ่มต้น</label>
+                        <input type="date" id="reportStartDate" class="form-control">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">วันที่สิ้นสุด</label>
+                        <input type="date" id="reportEndDate" class="form-control">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">ห้องเรียน</label>
+                        <select id="reportClass" class="form-control">
+                            <option value="">ทุกห้องเรียน</option>
+                        </select>
+                    </div>
+                </div>
+
+                <button class="btn btn-primary" onclick="generateReport()" style="width: 100%; margin-bottom: 20px;">
+                    <i class="fas fa-chart-bar"></i> สร้างรายงาน
+                </button>
+
+                <div id="reportResults">
+                    <div class="grid-2">
+                        <div>
+                            <h4>สถิติการเข้าเรียน</h4>
+                            <div id="statsContainer" class="grid-3"></div>
+                        </div>
+                        <div>
+                            <h4>กราฟสรุปผล</h4>
+                            <div class="chart-container">
+                                <canvas id="attendanceChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal สำหรับแก้ไขข้อมูล -->
+    <div id="editModal" class="modal">
+        <div class="modal-content">
+            <h3 id="modalTitle">แก้ไขข้อมูล</h3>
+            <div id="modalBody"></div>
+            <div style="display: flex; gap: 10px; margin-top: 20px;">
+                <button class="btn btn-success" onclick="saveEdit()" style="flex: 1;">บันทึก</button>
+                <button class="btn btn-danger" onclick="closeModal()" style="flex: 1;">ยกเลิก</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ข้อมูลระบบ
+        let systemData = {
+            classes: [],
+            subjects: [],
+            students: {},
+            attendance: []
+        };
+
+        let currentEdit = null;
+        let attendanceChart = null;
+
+        // URL Google Apps Script
+        const WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbwx_l9dnBVP5daaTfxyP8QYdOkClRBdwvUvN9-o51-uI9OGUNl2t6xf3u3I9xPK9p0/exec';
+        const SHEET_ID = '1ski-KWzrzsnWKkdlbJ0sPdwtNWZR5No809eK-Bk91t4';
+
+        // เริ่มต้นระบบ
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeSystem();
+        });
+
+        function initializeSystem() {
+            // ตั้งค่าวันที่เป็นวันปัจจุบัน
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('attendanceDate').value = today;
+            document.getElementById('attendanceDate').max = today;
+            
+            // โหลดข้อมูลเริ่มต้น
+            loadInitialData();
+        }
+
+        async function loadInitialData() {
+            try {
+                // โหลดข้อมูลจาก Google Sheets
+                const response = await sendToGoogleSheets({ action: 'loadData' });
+                
+                if (response.success) {
+                    systemData.classes = response.data.classes || [];
+                    systemData.subjects = response.data.subjects || [];
+                    systemData.students = response.data.students || {};
+                    systemData.attendance = response.data.attendance || [];
+                } else {
+                    // ใช้ข้อมูลตัวอย่างหากไม่สามารถโหลดได้
+                    systemData.classes = [
+                        { id: 1, name: 'ม.1/1' },
+                        { id: 2, name: 'ม.1/2' },
+                        { id: 3, name: 'ม.2/1' }
+                    ];
+
+                    systemData.subjects = [
+                        { id: 1, name: 'คณิตศาสตร์' },
+                        { id: 2, name: 'ภาษาไทย' },
+                        { id: 3, name: 'ภาษาอังกฤษ' },
+                        { id: 4, name: 'วิทยาศาสตร์' }
+                    ];
+
+                    systemData.students = {
+                        1: [
+                            { no: 1, id: '123456', name: 'นายสมชาย ใจดี' },
+                            { no: 2, id: '123457', name: 'นางสาวสมหญิง สวยงาม' },
+                            { no: 3, id: '123458', name: 'นายสมศักดิ์ เก่งมาก' }
+                        ]
+                    };
+                }
+            } catch (error) {
+                console.error('Error loading data:', error);
+                // ใช้ข้อมูลตัวอย่าง
+                systemData.classes = [
+                    { id: 1, name: 'ม.1/1' },
+                    { id: 2, name: 'ม.1/2' },
+                    { id: 3, name: 'ม.2/1' }
+                ];
+
+                systemData.subjects = [
+                    { id: 1, name: 'คณิตศาสตร์' },
+                    { id: 2, name: 'ภาษาไทย' },
+                    { id: 3, name: 'ภาษาอังกฤษ' },
+                    { id: 4, name: 'วิทยาศาสตร์' }
+                ];
+
+                systemData.students = {
+                    1: [
+                        { no: 1, id: '123456', name: 'นายสมชาย ใจดี' },
+                        { no: 2, id: '123457', name: 'นางสาวสมหญิง สวยงาม' },
+                        { no: 3, id: '123458', name: 'นายสมศักดิ์ เก่งมาก' }
+                    ]
+                };
+            }
+
+            updateAllSelects();
+            loadStudents();
+        }
+
+        // ฟังก์ชันแสดงแท็บ
+        function showTab(tabName) {
+            // ซ่อนแท็บทั้งหมด
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            
+            // ลบ active จากปุ่มทั้งหมด
+            document.querySelectorAll('.nav-tab').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            
+            // แสดงแท็บที่เลือก
+            document.getElementById(tabName).classList.add('active');
+            document.querySelector(`.nav-tab.${tabName}`).classList.add('active');
+        }
+
+        // ฟังก์ชันอัพเดทตัวเลือกทั้งหมด
+        function updateAllSelects() {
+            updateClassSelects();
+            updateSubjectSelects();
+        }
+
+        function updateClassSelects() {
+            const selects = ['attendanceClass', 'historyClass', 'reportClass', 'studentClassSelect'];
+            selects.forEach(selectId => {
+                const select = document.getElementById(selectId);
+                const currentValue = select.value;
+                select.innerHTML = '<option value="">เลือกห้องเรียน</option>';
+                
+                systemData.classes.forEach(cls => {
+                    const option = document.createElement('option');
+                    option.value = cls.id;
+                    option.textContent = cls.name;
+                    select.appendChild(option);
+                });
+                
+                select.value = currentValue;
+            });
+        }
+
+        function updateSubjectSelects() {
+            const selects = ['attendanceSubject', 'historySubject'];
+            selects.forEach(selectId => {
+                const select = document.getElementById(selectId);
+                const currentValue = select.value;
+                select.innerHTML = '<option value="">เลือกรายวิชา</option>';
+                
+                systemData.subjects.forEach(subject => {
+                    const option = document.createElement('option');
+                    option.value = subject.id;
+                    option.textContent = subject.name;
+                    select.appendChild(option);
+                });
+                
+                select.value = currentValue;
+            });
+        }
+
+        // ฟังก์ชันรีเซ็ตข้อมูลเมื่อเปลี่ยนวันที่
+        function resetAttendanceData() {
+            document.getElementById('attendanceClass').value = '';
+            document.getElementById('attendanceSubject').value = '';
+            document.getElementById('studentsList').style.display = 'none';
+        }
+
+        // ฟังก์ชันตรวจสอบเงื่อนไขการโหลด
+        function checkLoadConditions() {
+            const date = document.getElementById('attendanceDate').value;
+            const classId = document.getElementById('attendanceClass').value;
+            const subjectId = document.getElementById('attendanceSubject').value;
+            
+            if (date && classId && subjectId) {
+                loadStudentsForAttendance(classId);
+            } else {
+                document.getElementById('studentsList').style.display = 'none';
+            }
+        }
+
+        // ฟังก์ชันโหลดนักเรียนสำหรับเช็คชื่อ
+        function loadStudentsForAttendance(classId) {
+            const students = systemData.students[classId] || [];
+            const container = document.getElementById('studentsContainer');
+            
+            if (students.length === 0) {
+                container.innerHTML = '<p style="text-align: center; color: #666;">ไม่พบนักเรียนในห้องเรียนนี้</p>';
+                document.getElementById('studentsList').style.display = 'block';
+                return;
+            }
+            
+            container.innerHTML = students.map(student => `
+                <div class="student-item">
+                    <div class="student-info">
+                        <div class="student-no">${student.no}</div>
+                        <div class="student-id">${student.id}</div>
+                        <div class="student-name">${student.name}</div>
+                    </div>
+                    <div class="status-buttons">
+                        <button class="status-btn present active" onclick="setStatus(${student.no}, 'present', this)" title="มาเรียน">
+                            /
+                        </button>
+                        <button class="status-btn absent" onclick="setStatus(${student.no}, 'absent', this)" title="ขาดเรียน">
+                            ข
+                        </button>
+                        <button class="status-btn leave" onclick="setStatus(${student.no}, 'leave', this)" title="ลากิจ">
+                            ล
+                        </button>
+                        <button class="status-btn sick" onclick="setStatus(${student.no}, 'sick', this)" title="ลาป่วย">
+                            ป
+                        </button>
+                        <button class="status-btn activity" onclick="setStatus(${student.no}, 'activity', this)" title="กิจกรรม">
+                            ก
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+            
+            document.getElementById('studentsList').style.display = 'block';
+        }
+
+        // ฟังก์ชันตั้งสถานะ
+        function setStatus(studentNo, status, button) {
+            const studentItem = button.closest('.student-item');
+            const buttons = studentItem.querySelectorAll('.status-btn');
+            
+            buttons.forEach(btn => btn.classList.remove('active'));
+            button.classList.add('active');
+            
+            // เก็บสถานะ
+            button.closest('.student-item').dataset.status = status;
+        }
+
+        // ฟังก์ชันบันทึกการเข้าเรียน
+        async function saveAttendance() {
+            const date = document.getElementById('attendanceDate').value;
+            const classId = document.getElementById('attendanceClass').value;
+            const subjectId = document.getElementById('attendanceSubject').value;
+            
+            if (!date || !classId || !subjectId) {
+                Swal.fire('ข้อผิดพลาด', 'กรุณาเลือกข้อมูลให้ครบถ้วน', 'error');
+                return;
+            }
+            
+            // รวบรวมข้อมูลการเข้าเรียน
+            const attendanceData = [];
+            const studentItems = document.querySelectorAll('.student-item');
+            
+            studentItems.forEach(item => {
+                const studentInfo = item.querySelector('.student-info');
+                const no = studentInfo.querySelector('.student-no').textContent;
+                const id = studentInfo.querySelector('.student-id').textContent;
+                const name = studentInfo.querySelector('.student-name').textContent;
+                const status = item.dataset.status || 'present';
+                
+                attendanceData.push({
+                    no: no,
+                    studentId: id,
+                    name: name,
+                    status: status
+                });
+            });
+            
+            try {
+                // ส่งข้อมูลไป Google Sheets
+                const response = await sendToGoogleSheets({
+                    action: 'saveAttendance',
+                    date: date,
+                    classId: classId,
+                    subjectId: subjectId,
+                    attendance: attendanceData
+                });
+                
+                if (response.success) {
+                    Swal.fire('สำเร็จ', 'บันทึกการเข้าเรียนเรียบร้อยแล้ว', 'success');
+                } else {
+                    throw new Error(response.error || 'เกิดข้อผิดพลาด');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                Swal.fire('ข้อผิดพลาด', 'ไม่สามารถบันทึกข้อมูลได้', 'error');
+            }
+        }
+
+        // ฟังก์ชันส่งข้อมูลไป Google Sheets
+        async function sendToGoogleSheets(data) {
+            try {
+                // แสดงการโหลด
+                Swal.fire({
+                    title: 'กำลังบันทึกข้อมูล',
+                    text: 'กรุณารอสักครู่...',
+                    allowOutsideClick: false,
+                    didOpen: () => {
+                        Swal.showLoading();
+                    }
+                });
+
+                const response = await fetch(WEB_APP_URL, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(data),
+                    mode: 'cors'
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                const result = await response.json();
+                Swal.close();
+                return result;
+            } catch (error) {
+                console.error('Error sending to Google Sheets:', error);
+                Swal.close();
+                throw error; // ส่งข้อผิดพลาดต่อไป
+            }
+        }
+
+        // ฟังก์ชันจัดการห้องเรียน
+        async function addClass() {
+            const name = document.getElementById('newClassName').value.trim();
+            if (!name) {
+                Swal.fire('ข้อผิดพลาด', 'กรุณาใส่ชื่อห้องเรียน', 'error');
+                return;
+            }
+            
+            const id = Date.now();
+            const newClass = { id, name };
+            
+            try {
+                const response = await sendToGoogleSheets({
+                    action: 'addClass',
+                    class: newClass
+                });
+                
+                if (response.success) {
+                    systemData.classes.push(newClass);
+                    systemData.students[id] = [];
+                    
+                    document.getElementById('newClassName').value = '';
+                    updateAllSelects();
+                    displayClasses();
+                    
+                    Swal.fire('สำเร็จ', 'เพิ่มห้องเรียนเรียบร้อยแล้ว', 'success');
+                } else {
+                    throw new Error(response.error || 'เกิดข้อผิดพลาด');
+                }
+            } catch (error) {
+                console.error('Error adding class:', error);
+                Swal.fire('ข้อผิดพลาด', 'ไม่สามารถเพิ่มห้องเรียนได้', 'error');
+            }
+        }
+
+        function displayClasses() {
+            const container = document.getElementById('classList');
+            const sortedClasses = [...systemData.classes].sort((a, b) => a.name.localeCompare(b.name, 'th'));
+            
+            container.innerHTML = sortedClasses.map(cls => {
+                const studentCount = systemData.students[cls.id] ? systemData.students[cls.id].length : 0;
+                return `
+                    <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px; border: 1px solid #ddd; border-radius: 8px; margin-bottom: 8px;">
+                        <span>${cls.name} (${studentCount})</span>
+                        <div>
+                            <button class="btn btn-warning" onclick="editClass(${cls.id})" style="margin-right: 5px; padding: 5px 10px;">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <button class="btn btn-danger" onclick="deleteClass(${cls.id})" style="padding: 5px 10px;">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function editClass(id) {
+            const cls = systemData.classes.find(c => c.id === id);
+            if (!cls) return;
+            
+            currentEdit = { type: 'class', id };
+            document.getElementById('modalTitle').textContent = 'แก้ไขห้องเรียน';
+            document.getElementById('modalBody').innerHTML = `
+                <div class="form-group">
+                    <label class="form-label">ชื่อห้องเรียน</label>
+                    <input type="text" id="editInput" class="form-control" value="${cls.name}">
+                </div>
+            `;
+            document.getElementById('editModal').classList.add('show');
+        }
+
+        function deleteClass(id) {
+            Swal.fire({
+                title: 'ยืนยันการลบ',
+                text: 'คุณต้องการลบห้องเรียนนี้หรือไม่?',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonText: 'ลบ',
+                cancelButtonText: 'ยกเลิก'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    systemData.classes = systemData.classes.filter(c => c.id !== id);
+                    delete systemData.students[id];
+                    updateAllSelects();
+                    displayClasses();
+                    Swal.fire('สำเร็จ', 'ลบห้องเรียนเรียบร้อยแล้ว', 'success');
+                }
+            });
+        }
+
+        // ฟังก์ชันจัดการรายวิชา
+        async function addSubject() {
+            const name = document.getElementById('newSubjectName').value.trim();
+            if (!name) {
+                Swal.fire('ข้อผิดพลาด', 'กรุณาใส่ชื่อรายวิชา', 'error');
+                return;
+            }
+            
+            const id = Date.now();
+            const newSubject = { id, name };
+            
+            try {
+                const response = await sendToGoogleSheets({
+                    action: 'addSubject',
+                    subject: newSubject
+                });
+                
+                if (response.success) {
+                    systemData.subjects.push(newSubject);
+                    
+                    document.getElementById('newSubjectName').value = '';
+                    updateAllSelects();
+                    displaySubjects();
+                    
+                    Swal.fire('สำเร็จ', 'เพิ่มรายวิชาเรียบร้อยแล้ว', 'success');
+                } else {
+                    throw new Error(response.error || 'เกิดข้อผิดพลาด');
+                }
+            } catch (error) {
+                console.error('Error adding subject:', error);
+                Swal.fire('ข้อผิดพลาด', 'ไม่สามารถเพิ่มรายวิชาได้', 'error');
+            }
+        }
+
+        function displaySubjects() {
+            const container = document.getElementById('subjectList');
+            const sortedSubjects = [...systemData.subjects].sort((a, b) => a.name.localeCompare(b.name, 'th'));
+            
+            container.innerHTML = sortedSubjects.map(subject => `
+                <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px; border: 1px solid #ddd; border-radius: 8px; margin-bottom: 8px;">
+                    <span>${subject.name}</span>
+                    <div>
+                        <button class="btn btn-warning" onclick="editSubject(${subject.id})" style="margin-right: 5px; padding: 5px 10px;">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button class="btn btn-danger" onclick="deleteSubject(${subject.id})" style="padding: 5px 10px;">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function editSubject(id) {
+            const subject = systemData.subjects.find(s => s.id === id);
+            if (!subject) return;
+            
+            currentEdit = { type: 'subject', id };
+            document.getElementById('modalTitle').textContent = 'แก้ไขรายวิชา';
+            document.getElementById('modalBody').innerHTML = `
+                <div class="form-group">
+                    <label class="form-label">ชื่อรายวิชา</label>
+                    <input type="text" id="editInput" class="form-control" value="${subject.name}">
+                </div>
+            `;
+            document.getElementById('editModal').classList.add('show');
+        }
+
+        function deleteSubject(id) {
+            Swal.fire({
+                title: 'ยืนยันการลบ',
+                text: 'คุณต้องการลบรายวิชานี้หรือไม่?',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonText: 'ลบ',
+                cancelButtonText: 'ยกเลิก'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    systemData.subjects = systemData.subjects.filter(s => s.id !== id);
+                    updateAllSelects();
+                    displaySubjects();
+                    Swal.fire('สำเร็จ', 'ลบรายวิชาเรียบร้อยแล้ว', 'success');
+                }
+            });
+        }
+
+        // ฟังก์ชันเรียงลำดับนักเรียนใหม่
+        function reorderStudents(classId) {
+            if (!systemData.students[classId]) return;
+            
+            const students = systemData.students[classId];
+            
+            // แยกชายหญิง
+            const maleStudents = students.filter(student => 
+                student.name.startsWith('นาย') || 
+                student.name.startsWith('เด็กชาย') || 
+                student.name.startsWith('ด.ช.')
+            );
+            
+            const femaleStudents = students.filter(student => 
+                student.name.startsWith('นางสาว') || 
+                student.name.startsWith('นาง') || 
+                student.name.startsWith('เด็กหญิง') || 
+                student.name.startsWith('ด.ญ.')
+            );
+            
+            // เรียงตามเลขประจำตัว
+            maleStudents.sort((a, b) => a.id.localeCompare(b.id));
+            femaleStudents.sort((a, b) => a.id.localeCompare(b.id));
+            
+            // รวมและกำหนดเลขที่ใหม่
+            const sortedStudents = [...maleStudents, ...femaleStudents];
+            sortedStudents.forEach((student, index) => {
+                student.no = index + 1;
+            });
+            
+            systemData.students[classId] = sortedStudents;
+        }
+
+        // ฟังก์ชันจัดการนักเรียน
+        function loadStudents() {
+            const classId = document.getElementById('studentClassSelect').value;
+            if (!classId) {
+                document.getElementById('studentManageList').innerHTML = '';
+                return;
+            }
+            
+            const students = systemData.students[classId] || [];
+            const container = document.getElementById('studentManageList');
+            
+            container.innerHTML = students.map(student => `
+                <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px; border: 1px solid #ddd; border-radius: 8px; margin-bottom: 8px;">
+                    <div>
+                        <strong>${student.no}. ${student.name}</strong><br>
+                        <small>รหัส: ${student.id}</small>
+                    </div>
+                    <div>
+                        <button class="btn btn-warning" onclick="editStudent(${classId}, ${student.no})" style="margin-right: 5px; padding: 5px 10px;">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button class="btn btn-danger" onclick="deleteStudent(${classId}, ${student.no})" style="padding: 5px 10px;">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        async function addStudent() {
+            const classId = document.getElementById('studentClassSelect').value;
+            const no = document.getElementById('newStudentNo').value;
+            const id = document.getElementById('newStudentId').value.trim();
+            const name = document.getElementById('newStudentName').value.trim();
+            
+            if (!classId || !no || !id || !name) {
+                Swal.fire('ข้อผิดพลาด', 'กรุณากรอกข้อมูลให้ครบถ้วน', 'error');
+                return;
+            }
+            
+            const newStudent = {
+                no: parseInt(no),
+                id: id,
+                name: name
+            };
+            
+            try {
+                const response = await sendToGoogleSheets({
+                    action: 'addStudent',
+                    classId: classId,
+                    student: newStudent
+                });
+                
+                if (response.success) {
+                    if (!systemData.students[classId]) {
+                        systemData.students[classId] = [];
+                    }
+                    
+                    systemData.students[classId].push(newStudent);
+                    
+                    // เรียงลำดับใหม่
+                    reorderStudents(classId);
+                    
+                    // ล้างฟอร์ม
+                    document.getElementById('newStudentNo').value = '';
+                    document.getElementById('newStudentId').value = '';
+                    document.getElementById('newStudentName').value = '';
+                    
+                    loadStudents();
+                    displayClasses(); // อัพเดทจำนวนนักเรียนในรายการห้องเรียน
+                    Swal.fire('สำเร็จ', 'เพิ่มนักเรียนเรียบร้อยแล้ว', 'success');
+                } else {
+                    throw new Error(response.error || 'เกิดข้อผิดพลาด');
+                }
+            } catch (error) {
+                console.error('Error adding student:', error);
+                Swal.fire('ข้อผิดพลาด', 'ไม่สามารถเพิ่มนักเรียนได้', 'error');
+            }
+        }
+
+        function editStudent(classId, studentNo) {
+            const student = systemData.students[classId].find(s => s.no === studentNo);
+            if (!student) return;
+            
+            currentEdit = { type: 'student', classId, studentNo };
+            document.getElementById('modalTitle').textContent = 'แก้ไขข้อมูลนักเรียน';
+            document.getElementById('modalBody').innerHTML = `
+                <div class="form-group">
+                    <label class="form-label">เลขที่</label>
+                    <input type="number" id="editStudentNo" class="form-control" value="${student.no}">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">เลขประจำตัว</label>
+                    <input type="text" id="editStudentId" class="form-control" value="${student.id}">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">ชื่อ-สกุล</label>
+                    <input type="text" id="editStudentName" class="form-control" value="${student.name}">
+                </div>
+            `;
+            document.getElementById('editModal').classList.add('show');
+        }
+
+        function deleteStudent(classId, studentNo) {
+            Swal.fire({
+                title: 'ยืนยันการลบ',
+                text: 'คุณต้องการลบนักเรียนคนนี้หรือไม่?',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonText: 'ลบ',
+                cancelButtonText: 'ยกเลิก'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    systemData.students[classId] = systemData.students[classId].filter(s => s.no !== studentNo);
+                    // เรียงลำดับใหม่หลังจากลบ
+                    reorderStudents(classId);
+                    loadStudents();
+                    displayClasses(); // อัพเดทจำนวนนักเรียนในรายการห้องเรียน
+                    Swal.fire('สำเร็จ', 'ลบนักเรียนเรียบร้อยแล้ว', 'success');
+                }
+            });
+        }
+
+        function clearAllStudents() {
+            const classId = document.getElementById('studentClassSelect').value;
+            if (!classId) {
+                Swal.fire('ข้อผิดพลาด', 'กรุณาเลือกห้องเรียน', 'error');
+                return;
+            }
+            
+            Swal.fire({
+                title: 'ยืนยันการลบ',
+                text: 'คุณต้องการลบนักเรียนทั้งหมดในห้องนี้หรือไม่?',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonText: 'ลบทั้งหมด',
+                cancelButtonText: 'ยกเลิก'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    systemData.students[classId] = [];
+                    loadStudents();
+                    displayClasses(); // อัพเดทจำนวนนักเรียนในรายการห้องเรียน
+                    Swal.fire('สำเร็จ', 'ลบนักเรียนทั้งหมดเรียบร้อยแล้ว', 'success');
+                }
+            });
+        }
+
+        // ฟังก์ชันนำเข้าจาก Excel
+        function importFromExcel() {
+            const file = document.getElementById('excelFile').files[0];
+            const classId = document.getElementById('studentClassSelect').value;
+            
+            if (!file) return;
+            if (!classId) {
+                Swal.fire('ข้อผิดพลาด', 'กรุณาเลือกห้องเรียนก่อน', 'error');
+                return;
+            }
+            
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const data = new Uint8Array(e.target.result);
+                    const workbook = XLSX.read(data, { type: 'array' });
+                    const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+                    const jsonData = XLSX.utils.sheet_to_json(firstSheet, { header: 1 });
+                    
+                    // ข้ามแถวแรก (header) และประมวลผลข้อมูล
+                    const students = [];
+                    for (let i = 1; i < jsonData.length; i++) {
+                        const row = jsonData[i];
+                        if (row[0] && row[1] && row[2]) {
+                            students.push({
+                                no: parseInt(row[0]) || i,
+                                id: String(row[1]),
+                                name: String(row[2])
+                            });
+                        }
+                    }
+                    
+                    if (students.length > 0) {
+                        systemData.students[classId] = students;
+                        // เรียงลำดับใหม่หลังจากนำเข้า
+                        reorderStudents(classId);
+                        loadStudents();
+                        displayClasses(); // อัพเดทจำนวนนักเรียนในรายการห้องเรียน
+                        Swal.fire('สำเร็จ', `นำเข้าข้อมูลนักเรียน ${students.length} คน`, 'success');
+                    } else {
+                        Swal.fire('ข้อผิดพลาด', 'ไม่พบข้อมูลในไฟล์', 'error');
+                    }
+                } catch (error) {
+                    console.error('Error reading Excel:', error);
+                    Swal.fire('ข้อผิดพลาด', 'ไม่สามารถอ่านไฟล์ได้', 'error');
+                }
+            };
+            reader.readAsArrayBuffer(file);
+        }
+
+        // ฟังก์ชันค้นหาประวัติ
+        function searchHistory() {
+            const date = document.getElementById('historyDate').value;
+            const classId = document.getElementById('historyClass').value;
+            const subjectId = document.getElementById('historySubject').value;
+            
+            if (!date || !classId || !subjectId) {
+                Swal.fire('ข้อผิดพลาด', 'กรุณาเลือกข้อมูลให้ครบถ้วน', 'error');
+                return;
+            }
+            
+            // จำลองการค้นหาข้อมูล
+            const container = document.getElementById('historyResults');
+            container.innerHTML = `
+                <div class="card">
+                    <h4>ผลการค้นหา</h4>
+                    <p>วันที่: ${date}</p>
+                    <p>ห้องเรียน: ${systemData.classes.find(c => c.id == classId)?.name}</p>
+                    <p>รายวิชา: ${systemData.subjects.find(s => s.id == subjectId)?.name}</p>
+                    <p style="color: #666; font-style: italic;">ไม่พบข้อมูลการเข้าเรียนในวันที่ดังกล่าว</p>
+                </div>
+            `;
+        }
+
+        // ฟังก์ชันสร้างรายงาน
+        function generateReport() {
+            const startDate = document.getElementById('reportStartDate').value;
+            const endDate = document.getElementById('reportEndDate').value;
+            
+            if (!startDate || !endDate) {
+                Swal.fire('ข้อผิดพลาด', 'กรุณาเลือกช่วงวันที่', 'error');
+                return;
+            }
+            
+            // สร้างข้อมูลจำลอง
+            const stats = {
+                present: Math.floor(Math.random() * 100) + 50,
+                absent: Math.floor(Math.random() * 30) + 10,
+                leave: Math.floor(Math.random() * 20) + 5,
+                sick: Math.floor(Math.random() * 15) + 3,
+                activity: Math.floor(Math.random() * 10) + 2
+            };
+            
+            // แสดงสถิติ
+            const statsContainer = document.getElementById('statsContainer');
+            statsContainer.innerHTML = `
+                <div class="stats-card" style="background: linear-gradient(135deg, #2ecc71, #27ae60);">
+                    <div class="stats-number">${stats.present}</div>
+                    <div class="stats-label">มาเรียน</div>
+                </div>
+                <div class="stats-card" style="background: linear-gradient(135deg, #e74c3c, #c0392b);">
+                    <div class="stats-number">${stats.absent}</div>
+                    <div class="stats-label">ขาดเรียน</div>
+                </div>
+                <div class="stats-card" style="background: linear-gradient(135deg, #9b59b6, #8e44ad);">
+                    <div class="stats-number">${stats.leave}</div>
+                    <div class="stats-label">ลากิจ</div>
+                </div>
+                <div class="stats-card" style="background: linear-gradient(135deg, #3498db, #2980b9);">
+                    <div class="stats-number">${stats.sick}</div>
+                    <div class="stats-label">ลาป่วย</div>
+                </div>
+                <div class="stats-card" style="background: linear-gradient(135deg, #f39c12, #e67e22);">
+                    <div class="stats-number">${stats.activity}</div>
+                    <div class="stats-label">กิจกรรม</div>
+                </div>
+            `;
+            
+            // สร้างกราฟ
+            createChart(stats);
+            
+            Swal.fire('สำเร็จ', 'สร้างรายงานเรียบร้อยแล้ว', 'success');
+        }
+
+        function createChart(stats) {
+            const ctx = document.getElementById('attendanceChart').getContext('2d');
+            
+            if (attendanceChart) {
+                attendanceChart.destroy();
+            }
+            
+            attendanceChart = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['มาเรียน', 'ขาดเรียน', 'ลากิจ', 'ลาป่วย', 'กิจกรรม'],
+                    datasets: [{
+                        data: [stats.present, stats.absent, stats.leave, stats.sick, stats.activity],
+                        backgroundColor: [
+                            '#2ecc71',
+                            '#e74c3c',
+                            '#9b59b6',
+                            '#3498db',
+                            '#f39c12'
+                        ],
+                        borderWidth: 2,
+                        borderColor: '#fff'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: {
+                                font: {
+                                    family: 'Sarabun',
+                                    size: 14
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // ฟังก์ชัน Modal
+        function saveEdit() {
+            if (!currentEdit) return;
+            
+            if (currentEdit.type === 'class') {
+                const newName = document.getElementById('editInput').value.trim();
+                if (!newName) {
+                    Swal.fire('ข้อผิดพลาด', 'กรุณาใส่ชื่อห้องเรียน', 'error');
+                    return;
+                }
+                
+                const cls = systemData.classes.find(c => c.id === currentEdit.id);
+                if (cls) {
+                    cls.name = newName;
+                    updateAllSelects();
+                    displayClasses();
+                    closeModal();
+                    Swal.fire('สำเร็จ', 'แก้ไขห้องเรียนเรียบร้อยแล้ว', 'success');
+                }
+            } else if (currentEdit.type === 'subject') {
+                const newName = document.getElementById('editInput').value.trim();
+                if (!newName) {
+                    Swal.fire('ข้อผิดพลาด', 'กรุณาใส่ชื่อรายวิชา', 'error');
+                    return;
+                }
+                
+                const subject = systemData.subjects.find(s => s.id === currentEdit.id);
+                if (subject) {
+                    subject.name = newName;
+                    updateAllSelects();
+                    displaySubjects();
+                    closeModal();
+                    Swal.fire('สำเร็จ', 'แก้ไขรายวิชาเรียบร้อยแล้ว', 'success');
+                }
+            } else if (currentEdit.type === 'student') {
+                const no = parseInt(document.getElementById('editStudentNo').value);
+                const id = document.getElementById('editStudentId').value.trim();
+                const name = document.getElementById('editStudentName').value.trim();
+                
+                if (!no || !id || !name) {
+                    Swal.fire('ข้อผิดพลาด', 'กรุณากรอกข้อมูลให้ครบถ้วน', 'error');
+                    return;
+                }
+                
+                const student = systemData.students[currentEdit.classId].find(s => s.no === currentEdit.studentNo);
+                if (student) {
+                    student.no = no;
+                    student.id = id;
+                    student.name = name;
+                    
+                    // เรียงลำดับใหม่
+                    reorderStudents(currentEdit.classId);
+                    
+                    loadStudents();
+                    displayClasses(); // อัพเดทจำนวนนักเรียนในรายการห้องเรียน
+                    closeModal();
+                    Swal.fire('สำเร็จ', 'แก้ไขข้อมูลนักเรียนเรียบร้อยแล้ว', 'success');
+                }
+            }
+        }
+
+        function closeModal() {
+            document.getElementById('editModal').classList.remove('show');
+            currentEdit = null;
+        }
+
+        // เริ่มต้นแสดงข้อมูล
+        setTimeout(() => {
+            displayClasses();
+            displaySubjects();
+        }, 100);
+    </script>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'97590328624c732b',t:'MTc1NjI3MDkwMC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</html>
+
 
