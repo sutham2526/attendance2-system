@@ -256,16 +256,16 @@
         }
 
         .status-btn {
-            width: 45px;
-            height: 45px;
+            width: 35px;
+            height: 35px;
             border: none;
             border-radius: 50%;
             font-weight: 700;
-            font-size: 1rem;
+            font-size: 0.9rem;
             cursor: pointer;
             transition: all 0.3s ease;
-            color: white;
-            text-shadow: 1px 1px 2px rgba(0,0,0,0.3);
+            color: black;
+            text-shadow: none;
         }
 
         .status-btn.present {
@@ -1000,19 +1000,24 @@
 
         function displayClasses() {
             const container = document.getElementById('classList');
-            container.innerHTML = systemData.classes.map(cls => `
-                <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px; border: 1px solid #ddd; border-radius: 8px; margin-bottom: 8px;">
-                    <span>${cls.name}</span>
-                    <div>
-                        <button class="btn btn-warning" onclick="editClass(${cls.id})" style="margin-right: 5px; padding: 5px 10px;">
-                            <i class="fas fa-edit"></i>
-                        </button>
-                        <button class="btn btn-danger" onclick="deleteClass(${cls.id})" style="padding: 5px 10px;">
-                            <i class="fas fa-trash"></i>
-                        </button>
+            const sortedClasses = [...systemData.classes].sort((a, b) => a.name.localeCompare(b.name, 'th'));
+            
+            container.innerHTML = sortedClasses.map(cls => {
+                const studentCount = systemData.students[cls.id] ? systemData.students[cls.id].length : 0;
+                return `
+                    <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px; border: 1px solid #ddd; border-radius: 8px; margin-bottom: 8px;">
+                        <span>${cls.name} (${studentCount})</span>
+                        <div>
+                            <button class="btn btn-warning" onclick="editClass(${cls.id})" style="margin-right: 5px; padding: 5px 10px;">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <button class="btn btn-danger" onclick="deleteClass(${cls.id})" style="padding: 5px 10px;">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
                     </div>
-                </div>
-            `).join('');
+                `;
+            }).join('');
         }
 
         function editClass(id) {
@@ -1069,7 +1074,9 @@
 
         function displaySubjects() {
             const container = document.getElementById('subjectList');
-            container.innerHTML = systemData.subjects.map(subject => `
+            const sortedSubjects = [...systemData.subjects].sort((a, b) => a.name.localeCompare(b.name, 'th'));
+            
+            container.innerHTML = sortedSubjects.map(subject => `
                 <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px; border: 1px solid #ddd; border-radius: 8px; margin-bottom: 8px;">
                     <span>${subject.name}</span>
                     <div>
@@ -1115,6 +1122,39 @@
                     Swal.fire('สำเร็จ', 'ลบรายวิชาเรียบร้อยแล้ว', 'success');
                 }
             });
+        }
+
+        // ฟังก์ชันเรียงลำดับนักเรียนใหม่
+        function reorderStudents(classId) {
+            if (!systemData.students[classId]) return;
+            
+            const students = systemData.students[classId];
+            
+            // แยกชายหญิง
+            const maleStudents = students.filter(student => 
+                student.name.startsWith('นาย') || 
+                student.name.startsWith('เด็กชาย') || 
+                student.name.startsWith('ด.ช.')
+            );
+            
+            const femaleStudents = students.filter(student => 
+                student.name.startsWith('นางสาว') || 
+                student.name.startsWith('นาง') || 
+                student.name.startsWith('เด็กหญิง') || 
+                student.name.startsWith('ด.ญ.')
+            );
+            
+            // เรียงตามเลขประจำตัว
+            maleStudents.sort((a, b) => a.id.localeCompare(b.id));
+            femaleStudents.sort((a, b) => a.id.localeCompare(b.id));
+            
+            // รวมและกำหนดเลขที่ใหม่
+            const sortedStudents = [...maleStudents, ...femaleStudents];
+            sortedStudents.forEach((student, index) => {
+                student.no = index + 1;
+            });
+            
+            systemData.students[classId] = sortedStudents;
         }
 
         // ฟังก์ชันจัดการนักเรียน
@@ -1167,8 +1207,8 @@
                 name: name
             });
             
-            // เรียงลำดับตามเลขที่
-            systemData.students[classId].sort((a, b) => a.no - b.no);
+            // เรียงลำดับใหม่
+            reorderStudents(classId);
             
             // ล้างฟอร์ม
             document.getElementById('newStudentNo').value = '';
@@ -1176,6 +1216,7 @@
             document.getElementById('newStudentName').value = '';
             
             loadStudents();
+            displayClasses(); // อัพเดทจำนวนนักเรียนในรายการห้องเรียน
             Swal.fire('สำเร็จ', 'เพิ่มนักเรียนเรียบร้อยแล้ว', 'success');
         }
 
@@ -1213,7 +1254,10 @@
             }).then((result) => {
                 if (result.isConfirmed) {
                     systemData.students[classId] = systemData.students[classId].filter(s => s.no !== studentNo);
+                    // เรียงลำดับใหม่หลังจากลบ
+                    reorderStudents(classId);
                     loadStudents();
+                    displayClasses(); // อัพเดทจำนวนนักเรียนในรายการห้องเรียน
                     Swal.fire('สำเร็จ', 'ลบนักเรียนเรียบร้อยแล้ว', 'success');
                 }
             });
@@ -1237,6 +1281,7 @@
                 if (result.isConfirmed) {
                     systemData.students[classId] = [];
                     loadStudents();
+                    displayClasses(); // อัพเดทจำนวนนักเรียนในรายการห้องเรียน
                     Swal.fire('สำเร็จ', 'ลบนักเรียนทั้งหมดเรียบร้อยแล้ว', 'success');
                 }
             });
@@ -1276,7 +1321,10 @@
                     
                     if (students.length > 0) {
                         systemData.students[classId] = students;
+                        // เรียงลำดับใหม่หลังจากนำเข้า
+                        reorderStudents(classId);
                         loadStudents();
+                        displayClasses(); // อัพเดทจำนวนนักเรียนในรายการห้องเรียน
                         Swal.fire('สำเร็จ', `นำเข้าข้อมูลนักเรียน ${students.length} คน`, 'success');
                     } else {
                         Swal.fire('ข้อผิดพลาด', 'ไม่พบข้อมูลในไฟล์', 'error');
@@ -1456,9 +1504,10 @@
                     student.name = name;
                     
                     // เรียงลำดับใหม่
-                    systemData.students[currentEdit.classId].sort((a, b) => a.no - b.no);
+                    reorderStudents(currentEdit.classId);
                     
                     loadStudents();
+                    displayClasses(); // อัพเดทจำนวนนักเรียนในรายการห้องเรียน
                     closeModal();
                     Swal.fire('สำเร็จ', 'แก้ไขข้อมูลนักเรียนเรียบร้อยแล้ว', 'success');
                 }
@@ -1476,5 +1525,5 @@
             displaySubjects();
         }, 100);
     </script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'97504726d181732e',t:'MTc1NjE3OTMxNC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9751b4af80d14f58',t:'MTc1NjE5NDI4Ni4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
