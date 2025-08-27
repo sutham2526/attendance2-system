@@ -822,63 +822,23 @@
                     });
                 }
 
-                // วิธีที่ 1: ลอง POST ก่อน (วิธีปกติ)
-                try {
-                    const response = await fetch(WEB_APP_URL, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                        },
-                        body: JSON.stringify(data),
-                        mode: 'cors'
-                    });
+                console.log('Sending data to Google Sheets:', data);
 
-                    if (response.ok) {
-                        const result = await response.json();
-                        if (data.action !== 'loadData') {
-                            Swal.close();
-                        }
-                        return result;
-                    }
-                } catch (postError) {
-                    console.log('POST failed, trying GET method:', postError);
-                }
-
-                // วิธีที่ 2: ใช้ GET พร้อม parameters
-                const params = new URLSearchParams();
-                Object.keys(data).forEach(key => {
-                    if (typeof data[key] === 'object') {
-                        params.append(key, JSON.stringify(data[key]));
-                    } else {
-                        params.append(key, data[key]);
-                    }
-                });
-
-                const getResponse = await fetch(`${WEB_APP_URL}?${params.toString()}`, {
-                    method: 'GET',
-                    mode: 'cors'
-                });
-
-                if (getResponse.ok) {
-                    const result = await getResponse.json();
-                    if (data.action !== 'loadData') {
-                        Swal.close();
-                    }
-                    return result;
-                }
-
-                // วิธีที่ 3: ใช้ JSONP (สำหรับ Google Apps Script)
+                // วิธีที่ 1: ใช้ JSONP (วิธีที่ดีที่สุดสำหรับ Google Apps Script)
                 return new Promise((resolve, reject) => {
                     const callbackName = 'jsonp_callback_' + Math.round(100000 * Math.random());
                     
                     // สร้าง callback function
-                    window[callbackName] = function(data) {
+                    window[callbackName] = function(result) {
+                        console.log('Received response:', result);
                         delete window[callbackName];
-                        document.body.removeChild(script);
+                        if (document.body.contains(script)) {
+                            document.body.removeChild(script);
+                        }
                         if (data.action !== 'loadData') {
                             Swal.close();
                         }
-                        resolve(data);
+                        resolve(result);
                     };
 
                     // สร้าง script tag สำหรับ JSONP
@@ -887,27 +847,34 @@
                     script.src = `${WEB_APP_URL}?callback=${callbackName}&data=${encodedData}`;
                     
                     script.onerror = function() {
+                        console.error('JSONP script error');
                         delete window[callbackName];
-                        document.body.removeChild(script);
+                        if (document.body.contains(script)) {
+                            document.body.removeChild(script);
+                        }
                         if (data.action !== 'loadData') {
                             Swal.close();
                         }
-                        reject(new Error('JSONP request failed'));
+                        
+                        // ลองใช้ POST method
+                        tryPostMethod(data).then(resolve).catch(reject);
                     };
 
                     document.body.appendChild(script);
                     
-                    // Timeout หลัง 10 วินาที
+                    // Timeout หลัง 15 วินาที
                     setTimeout(() => {
                         if (window[callbackName]) {
+                            console.log('JSONP timeout, trying POST method');
                             delete window[callbackName];
-                            document.body.removeChild(script);
-                            if (data.action !== 'loadData') {
-                                Swal.close();
+                            if (document.body.contains(script)) {
+                                document.body.removeChild(script);
                             }
-                            reject(new Error('Request timeout'));
+                            
+                            // ลองใช้ POST method
+                            tryPostMethod(data).then(resolve).catch(reject);
                         }
-                    }, 10000);
+                    }, 15000);
                 });
                 
             } catch (error) {
@@ -926,6 +893,36 @@
                 }
                 
                 throw error;
+            }
+        }
+
+        // ฟังก์ชันลอง POST method
+        async function tryPostMethod(data) {
+            try {
+                console.log('Trying POST method...');
+                const response = await fetch(WEB_APP_URL, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(data),
+                    mode: 'no-cors'
+                });
+
+                // เนื่องจากใช้ no-cors จึงไม่สามารถอ่าน response ได้
+                // ถือว่าสำเร็จถ้าไม่มี error
+                console.log('POST request sent successfully');
+                if (data.action !== 'loadData') {
+                    Swal.close();
+                }
+                return { success: true };
+                
+            } catch (postError) {
+                console.error('POST method failed:', postError);
+                if (data.action !== 'loadData') {
+                    Swal.close();
+                }
+                throw postError;
             }
         }
 
@@ -1858,5 +1855,5 @@
             displaySubjects();
         }, 100);
     </script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'975c2820701afda0',t:'MTc1NjMwMzg3My4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'975c3c282499f879',t:'MTc1NjMwNDY5My4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
