@@ -922,9 +922,49 @@
                 btn.classList.remove('active');
             });
             
+            // รีเซ็ตข้อมูลตามเมนูที่เลือก
+            resetTabData(tabName);
+            
             // แสดงแท็บที่เลือก
             document.getElementById(tabName).classList.add('active');
             document.querySelector(`.nav-tab.${tabName}`).classList.add('active');
+        }
+
+        // ฟังก์ชันรีเซ็ตข้อมูลในแต่ละแท็บ
+        function resetTabData(tabName) {
+            switch(tabName) {
+                case 'attendance':
+                    // รีเซ็ตวันที่เป็นวันปัจจุบัน
+                    const today = new Date().toISOString().split('T')[0];
+                    document.getElementById('attendanceDate').value = today;
+                    document.getElementById('attendanceClass').value = '';
+                    document.getElementById('attendanceSubject').value = '';
+                    document.getElementById('studentsList').style.display = 'none';
+                    break;
+                    
+                case 'history':
+                    // รีเซ็ตฟอร์มค้นหา
+                    document.getElementById('historyDate').value = '';
+                    document.getElementById('historyClass').value = '';
+                    document.getElementById('historySubject').value = '';
+                    document.getElementById('historyResults').innerHTML = '';
+                    break;
+                    
+                case 'reports':
+                    // รีเซ็ตฟอร์มรายงาน
+                    document.getElementById('reportStartDate').value = '';
+                    document.getElementById('reportEndDate').value = '';
+                    document.getElementById('reportClass').value = '';
+                    document.getElementById('reportSubject').value = '';
+                    
+                    // รีเซ็ตผลลัพธ์
+                    document.getElementById('statsContainer').innerHTML = '';
+                    if (attendanceChart) {
+                        attendanceChart.destroy();
+                        attendanceChart = null;
+                    }
+                    break;
+            }
         }
 
         // ฟังก์ชันอัพเดทตัวเลือกทั้งหมด
@@ -1937,5 +1977,5 @@
             currentEdit = null;
         }
     </script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'975f6711a790fe03',t:'MTc1NjMzNzkwNy4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'975f9bfc474e405f',t:'MTc1NjM0MDA3NS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
