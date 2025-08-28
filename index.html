@@ -232,10 +232,10 @@
         .student-item {
             display: flex;
             align-items: center;
-            padding: 15px;
+            padding: 10px;
             border: 2px solid #f0f0f0;
-            border-radius: 15px;
-            margin-bottom: 10px;
+            border-radius: 12px;
+            margin-bottom: 8px;
             background: #fafafa;
             transition: all 0.3s ease;
         }
@@ -275,12 +275,12 @@
         }
 
         .status-btn {
-            width: 35px;
-            height: 35px;
+            width: 32px;
+            height: 32px;
             border: none;
             border-radius: 50%;
             font-weight: 700;
-            font-size: 0.9rem;
+            font-size: 0.85rem;
             cursor: pointer;
             transition: all 0.3s ease;
             color: black;
@@ -1496,26 +1496,42 @@
             document.getElementById('editModal').classList.add('show');
         }
 
-        function deleteStudent(classId, studentNo) {
+        async function deleteStudent(classId, studentNo) {
             Swal.fire({
                 title: 'ยืนยันการลบ',
-                text: 'คุณต้องการลบนักเรียนคนนี้หรือไม่?',
+                text: 'คุณต้องการลบนักเรียนคนนี้หรือไม่? (จะลบข้อมูลการเข้าเรียนที่เกี่ยวข้องด้วย)',
                 icon: 'warning',
                 showCancelButton: true,
                 confirmButtonText: 'ลบ',
                 cancelButtonText: 'ยกเลิก'
-            }).then((result) => {
+            }).then(async (result) => {
                 if (result.isConfirmed) {
-                    systemData.students[classId] = systemData.students[classId].filter(s => s.no !== studentNo);
-                    reorderStudents(classId);
-                    loadStudents();
-                    displayClasses();
-                    Swal.fire('สำเร็จ', 'ลบนักเรียนเรียบร้อยแล้ว', 'success');
+                    try {
+                        // ลบข้อมูลการเข้าเรียนที่เกี่ยวข้อง
+                        const response = await sendToGoogleSheets({
+                            action: 'deleteStudentAttendance',
+                            classId: classId,
+                            studentNo: studentNo
+                        });
+                        
+                        if (response && response.success) {
+                            systemData.students[classId] = systemData.students[classId].filter(s => s.no !== studentNo);
+                            reorderStudents(classId);
+                            loadStudents();
+                            displayClasses();
+                            Swal.fire('สำเร็จ', 'ลบนักเรียนและข้อมูลการเข้าเรียนเรียบร้อยแล้ว', 'success');
+                        } else {
+                            throw new Error('Failed to delete student attendance');
+                        }
+                    } catch (error) {
+                        console.error('Error deleting student:', error);
+                        Swal.fire('ข้อผิดพลาด', 'ไม่สามารถลบข้อมูลได้ กรุณาลองใหม่', 'error');
+                    }
                 }
             });
         }
 
-        function clearAllStudents() {
+        async function clearAllStudents() {
             const classId = document.getElementById('studentClassSelect').value;
             if (!classId) {
                 Swal.fire('ข้อผิดพลาด', 'กรุณาเลือกห้องเรียน', 'error');
@@ -1524,17 +1540,32 @@
             
             Swal.fire({
                 title: 'ยืนยันการลบ',
-                text: 'คุณต้องการลบนักเรียนทั้งหมดในห้องนี้หรือไม่?',
+                text: 'คุณต้องการลบนักเรียนทั้งหมดในห้องนี้หรือไม่? (จะลบข้อมูลการเข้าเรียนที่เกี่ยวข้องทั้งหมดด้วย)',
                 icon: 'warning',
                 showCancelButton: true,
                 confirmButtonText: 'ลบทั้งหมด',
                 cancelButtonText: 'ยกเลิก'
-            }).then((result) => {
+            }).then(async (result) => {
                 if (result.isConfirmed) {
-                    systemData.students[classId] = [];
-                    loadStudents();
-                    displayClasses();
-                    Swal.fire('สำเร็จ', 'ลบนักเรียนทั้งหมดเรียบร้อยแล้ว', 'success');
+                    try {
+                        // ลบข้อมูลการเข้าเรียนทั้งหมดของห้องนี้
+                        const response = await sendToGoogleSheets({
+                            action: 'deleteClassAttendance',
+                            classId: classId
+                        });
+                        
+                        if (response && response.success) {
+                            systemData.students[classId] = [];
+                            loadStudents();
+                            displayClasses();
+                            Swal.fire('สำเร็จ', 'ลบนักเรียนและข้อมูลการเข้าเรียนทั้งหมดเรียบร้อยแล้ว', 'success');
+                        } else {
+                            throw new Error('Failed to delete class attendance');
+                        }
+                    } catch (error) {
+                        console.error('Error clearing students:', error);
+                        Swal.fire('ข้อผิดพลาด', 'ไม่สามารถลบข้อมูลได้ กรุณาลองใหม่', 'error');
+                    }
                 }
             });
         }
@@ -1977,5 +2008,5 @@
             currentEdit = null;
         }
     </script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'975f9bfc474e405f',t:'MTc1NjM0MDA3NS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'975fb71816a8c6e5',t:'MTc1NjM0MTE4NS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
