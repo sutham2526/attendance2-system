@@ -675,31 +675,28 @@
                 <div class="grid-3" style="margin-bottom: 20px;">
                     <div class="form-group">
                         <label class="form-label">วันที่เริ่มต้น</label>
-                        <input type="date" id="reportStartDate" class="form-control">
+                        <input type="date" id="reportStartDate" class="form-control" onchange="checkReportConditions()">
                     </div>
                     <div class="form-group">
                         <label class="form-label">วันที่สิ้นสุด</label>
-                        <input type="date" id="reportEndDate" class="form-control">
+                        <input type="date" id="reportEndDate" class="form-control" onchange="checkReportConditions()">
                     </div>
                     <div class="form-group">
                         <label class="form-label">ห้องเรียน</label>
-                        <select id="reportClass" class="form-control">
+                        <select id="reportClass" class="form-control" onchange="checkReportConditions()">
                             <option value="">เลือกห้องเรียน</option>
                         </select>
                     </div>
                     <div class="form-group">
                         <label class="form-label">รายวิชา</label>
-                        <select id="reportSubject" class="form-control">
+                        <select id="reportSubject" class="form-control" onchange="checkReportConditions()">
                             <option value="">เลือกรายวิชา</option>
                         </select>
                     </div>
                 </div>
 
                 <div style="display: flex; gap: 10px; margin-bottom: 20px;">
-                    <button class="btn btn-primary" onclick="generateReport()" style="flex: 1;">
-                        <i class="fas fa-chart-bar"></i> สร้างรายงาน
-                    </button>
-                    <button class="btn btn-danger" onclick="generatePDFReport()" style="flex: 1;">
+                    <button class="btn btn-danger" onclick="generatePDFReport()" style="width: 100%;">
                         <i class="fas fa-file-pdf"></i> สร้างรายงาน PDF
                     </button>
                 </div>
@@ -1071,6 +1068,25 @@
                 searchHistory();
             } else {
                 document.getElementById('historyResults').innerHTML = '';
+            }
+        }
+
+        // ฟังก์ชันตรวจสอบเงื่อนไขรายงาน
+        function checkReportConditions() {
+            const startDate = document.getElementById('reportStartDate').value;
+            const endDate = document.getElementById('reportEndDate').value;
+            const classId = document.getElementById('reportClass').value;
+            const subjectId = document.getElementById('reportSubject').value;
+            
+            if (startDate && endDate && classId && subjectId) {
+                generateReport();
+            } else {
+                // รีเซ็ตผลลัพธ์
+                document.getElementById('statsContainer').innerHTML = '';
+                if (attendanceChart) {
+                    attendanceChart.destroy();
+                    attendanceChart = null;
+                }
             }
         }
 
@@ -2013,9 +2029,19 @@
             const className = systemData.classes.find(c => c.id == classId)?.name || '';
             const subjectName = systemData.subjects.find(s => s.id == subjectId)?.name || '';
             const students = reportData.students || [];
-            const dates = reportData.dates || [];
             
-            // ตั้งค่าฟอนต์ (ใช้ฟอนต์พื้นฐานที่รองรับภาษาไทย)
+            // กรองเฉพาะวันที่ที่มีการบันทึกข้อมูล
+            const recordedDates = [];
+            const allDates = reportData.dates || [];
+            
+            allDates.forEach(date => {
+                const hasRecord = students.some(student => student.attendance[date]);
+                if (hasRecord) {
+                    recordedDates.push(date);
+                }
+            });
+            
+            // ตั้งค่าฟอนต์ TH Sarabun (ใช้ฟอนต์พื้นฐานที่รองรับภาษาไทย)
             doc.setFont('helvetica');
             
             // หัวเรื่อง
@@ -2038,10 +2064,10 @@
             const availableWidth = 277 - totalFixedWidth - 20; // A4 landscape width - margins
             const maxDateCols = Math.floor(availableWidth / dateColWidth);
             
-            // แบ่งวันที่เป็นหน้า ๆ
+            // แบ่งวันที่เป็นหน้า ๆ (ใช้เฉพาะวันที่ที่มีการบันทึก)
             const dateChunks = [];
-            for (let i = 0; i < dates.length; i += maxDateCols) {
-                dateChunks.push(dates.slice(i, i + maxDateCols));
+            for (let i = 0; i < recordedDates.length; i += maxDateCols) {
+                dateChunks.push(recordedDates.slice(i, i + maxDateCols));
             }
             
             // สร้างตารางแต่ละหน้า
@@ -2224,5 +2250,5 @@
             currentEdit = null;
         }
     </script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'97690d4d24c0a1ae',t:'MTc1NjQzOTA4OC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9769395810dba1ae',t:'MTc1NjQ0MDg5Mi4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
