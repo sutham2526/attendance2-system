@@ -2021,142 +2021,32 @@
             }
         }
 
-        function createPDFReport(reportData, startDate, endDate, classId, subjectId) {
-            const { jsPDF } = window.jspdf;
-            const doc = new jsPDF('l', 'mm', 'a4'); // landscape orientation
-            
-            // ข้อมูลพื้นฐาน
-            const className = systemData.classes.find(c => c.id == classId)?.name || '';
-            const subjectName = systemData.subjects.find(s => s.id == subjectId)?.name || '';
-            const students = reportData.students || [];
-            
-            // กรองเฉพาะวันที่ที่มีการบันทึกข้อมูล
-            const recordedDates = [];
-            const allDates = reportData.dates || [];
-            
-            allDates.forEach(date => {
-                const hasRecord = students.some(student => student.attendance[date]);
-                if (hasRecord) {
-                    recordedDates.push(date);
+        async function createPDFReport(reportData, startDate, endDate, classId, subjectId) {
+            try {
+                // ส่งข้อมูลไป Google Apps Script เพื่อสร้าง PDF
+                const response = await sendToGoogleSheets({
+                    action: 'generatePDF',
+                    reportData: reportData,
+                    startDate: startDate,
+                    endDate: endDate,
+                    classId: classId,
+                    subjectId: subjectId,
+                    className: systemData.classes.find(c => c.id == classId)?.name || '',
+                    subjectName: systemData.subjects.find(s => s.id == subjectId)?.name || ''
+                });
+                
+                if (response && response.success && response.pdfUrl) {
+                    // เปิด PDF ในแท็บใหม่
+                    window.open(response.pdfUrl, '_blank');
+                    Swal.fire('สำเร็จ', 'สร้างรายงาน PDF เรียบร้อยแล้ว', 'success');
+                } else {
+                    throw new Error('Failed to generate PDF');
                 }
-            });
-            
-            // ตั้งค่าฟอนต์ TH Sarabun (ใช้ฟอนต์พื้นฐานที่รองรับภาษาไทย)
-            doc.setFont('helvetica');
-            
-            // หัวเรื่อง
-            doc.setFontSize(16);
-            doc.text('รายงานการเข้าเรียน', 148, 20, { align: 'center' });
-            
-            doc.setFontSize(12);
-            doc.text(`ห้องเรียน: ${className}`, 20, 35);
-            doc.text(`รายวิชา: ${subjectName}`, 20, 45);
-            doc.text(`ช่วงวันที่: ${formatDateThai(startDate)} - ${formatDateThai(endDate)}`, 20, 55);
-            
-            // เตรียมข้อมูลตาราง
-            const tableStartY = 70;
-            const rowHeight = 8;
-            const colWidths = [15, 25, 60]; // เลขที่, รหัส, ชื่อ
-            const dateColWidth = 12; // ความกว้างของคอลัมน์วันที่
-            
-            // คำนวณความกว้างทั้งหมด
-            const totalFixedWidth = colWidths.reduce((sum, width) => sum + width, 0);
-            const availableWidth = 277 - totalFixedWidth - 20; // A4 landscape width - margins
-            const maxDateCols = Math.floor(availableWidth / dateColWidth);
-            
-            // แบ่งวันที่เป็นหน้า ๆ (ใช้เฉพาะวันที่ที่มีการบันทึก)
-            const dateChunks = [];
-            for (let i = 0; i < recordedDates.length; i += maxDateCols) {
-                dateChunks.push(recordedDates.slice(i, i + maxDateCols));
+                
+            } catch (error) {
+                console.error('Error creating PDF:', error);
+                Swal.fire('ข้อผิดพลาด', 'ไม่สามารถสร้างรายงาน PDF ได้ กรุณาลองใหม่', 'error');
             }
-            
-            // สร้างตารางแต่ละหน้า
-            dateChunks.forEach((dateChunk, chunkIndex) => {
-                if (chunkIndex > 0) {
-                    doc.addPage();
-                    // หัวเรื่องหน้าใหม่
-                    doc.setFontSize(16);
-                    doc.text('รายงานการเข้าเรียน (ต่อ)', 148, 20, { align: 'center' });
-                    doc.setFontSize(12);
-                    doc.text(`ห้องเรียน: ${className}`, 20, 35);
-                    doc.text(`รายวิชา: ${subjectName}`, 20, 45);
-                }
-                
-                let currentY = tableStartY;
-                let currentX = 20;
-                
-                // วาดหัวตาราง
-                doc.setFontSize(10);
-                doc.setFont('helvetica', 'bold');
-                
-                // คอลัมน์คงที่
-                doc.rect(currentX, currentY, colWidths[0], rowHeight);
-                doc.text('เลขที่', currentX + colWidths[0]/2, currentY + 5, { align: 'center' });
-                currentX += colWidths[0];
-                
-                doc.rect(currentX, currentY, colWidths[1], rowHeight);
-                doc.text('รหัส', currentX + colWidths[1]/2, currentY + 5, { align: 'center' });
-                currentX += colWidths[1];
-                
-                doc.rect(currentX, currentY, colWidths[2], rowHeight);
-                doc.text('ชื่อ-สกุล', currentX + colWidths[2]/2, currentY + 5, { align: 'center' });
-                currentX += colWidths[2];
-                
-                // คอลัมน์วันที่
-                dateChunk.forEach(date => {
-                    doc.rect(currentX, currentY, dateColWidth, rowHeight);
-                    const dayMonth = formatDateShort(date);
-                    doc.text(dayMonth, currentX + dateColWidth/2, currentY + 5, { align: 'center' });
-                    currentX += dateColWidth;
-                });
-                
-                currentY += rowHeight;
-                
-                // วาดข้อมูลนักเรียน
-                doc.setFont('helvetica', 'normal');
-                students.forEach(student => {
-                    currentX = 20;
-                    
-                    // เลขที่
-                    doc.rect(currentX, currentY, colWidths[0], rowHeight);
-                    doc.text(student.no.toString(), currentX + colWidths[0]/2, currentY + 5, { align: 'center' });
-                    currentX += colWidths[0];
-                    
-                    // รหัสนักเรียน
-                    doc.rect(currentX, currentY, colWidths[1], rowHeight);
-                    doc.text(student.id, currentX + colWidths[1]/2, currentY + 5, { align: 'center' });
-                    currentX += colWidths[1];
-                    
-                    // ชื่อ-สกุล
-                    doc.rect(currentX, currentY, colWidths[2], rowHeight);
-                    doc.text(student.name, currentX + 2, currentY + 5);
-                    currentX += colWidths[2];
-                    
-                    // สถานะการเข้าเรียนในแต่ละวัน
-                    dateChunk.forEach(date => {
-                        doc.rect(currentX, currentY, dateColWidth, rowHeight);
-                        const attendance = student.attendance[date];
-                        if (attendance) {
-                            const statusSymbol = getStatusSymbol(attendance);
-                            doc.text(statusSymbol, currentX + dateColWidth/2, currentY + 5, { align: 'center' });
-                        }
-                        currentX += dateColWidth;
-                    });
-                    
-                    currentY += rowHeight;
-                });
-                
-                // เพิ่มคำอธิบาย
-                currentY += 10;
-                doc.setFontSize(8);
-                doc.text('สัญลักษณ์: / = มาเรียน, ข = ขาดเรียน, ล = ลากิจ, ป = ลาป่วย, ก = กิจกรรม', 20, currentY);
-            });
-            
-            // บันทึกไฟล์
-            const fileName = `รายงานการเข้าเรียน_${className}_${subjectName}_${startDate}_${endDate}.pdf`;
-            doc.save(fileName);
-            
-            Swal.fire('สำเร็จ', 'สร้างรายงาน PDF เรียบร้อยแล้ว', 'success');
         }
 
         function getStatusSymbol(status) {
@@ -2250,5 +2140,5 @@
             currentEdit = null;
         }
     </script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9769395810dba1ae',t:'MTc1NjQ0MDg5Mi4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'976946dbf549a192',t:'MTc1NjQ0MTQ0Ni4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
