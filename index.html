@@ -672,7 +672,7 @@
                     <h3>รายงานสรุปผล</h3>
                 </div>
 
-                <div class="grid-3" style="margin-bottom: 20px;">
+                <div class="grid-2" style="margin-bottom: 20px;">
                     <div class="form-group">
                         <label class="form-label">วันที่เริ่มต้น</label>
                         <input type="date" id="reportStartDate" class="form-control" onchange="checkReportConditions()">
@@ -702,18 +702,7 @@
                 </div>
 
                 <div id="reportResults">
-                    <div class="grid-2">
-                        <div>
-                            <h4>สถิติการเข้าเรียน</h4>
-                            <div id="statsContainer" class="grid-3"></div>
-                        </div>
-                        <div>
-                            <h4>กราฟสรุปผล</h4>
-                            <div class="chart-container">
-                                <canvas id="attendanceChart"></canvas>
-                            </div>
-                        </div>
-                    </div>
+                    <div id="individualStatsContainer"></div>
                 </div>
             </div>
         </div>
@@ -957,11 +946,7 @@
                     document.getElementById('reportSubject').value = '';
                     
                     // รีเซ็ตผลลัพธ์
-                    document.getElementById('statsContainer').innerHTML = '';
-                    if (attendanceChart) {
-                        attendanceChart.destroy();
-                        attendanceChart = null;
-                    }
+                    document.getElementById('individualStatsContainer').innerHTML = '';
                     break;
             }
         }
@@ -1082,11 +1067,7 @@
                 generateReport();
             } else {
                 // รีเซ็ตผลลัพธ์
-                document.getElementById('statsContainer').innerHTML = '';
-                if (attendanceChart) {
-                    attendanceChart.destroy();
-                    attendanceChart = null;
-                }
+                document.getElementById('individualStatsContainer').innerHTML = '';
             }
         }
 
@@ -1857,8 +1838,8 @@
             const classId = document.getElementById('reportClass').value;
             const subjectId = document.getElementById('reportSubject').value;
             
-            if (!startDate || !endDate) {
-                Swal.fire('ข้อผิดพลาด', 'กรุณาเลือกช่วงวันที่', 'error');
+            if (!startDate || !endDate || !classId || !subjectId) {
+                Swal.fire('ข้อผิดพลาด', 'กรุณาเลือกข้อมูลให้ครบถ้วน', 'error');
                 return;
             }
             
@@ -1873,53 +1854,20 @@
                     }
                 });
                 
-                // ดึงข้อมูลจาก Google Sheets
+                // ดึงข้อมูลรายละเอียดการเข้าเรียน
                 const response = await sendToGoogleSheets({
-                    action: 'getReportData',
+                    action: 'getIndividualReportData',
                     startDate: startDate,
                     endDate: endDate,
-                    classId: classId || null,
-                    subjectId: subjectId || null
+                    classId: classId,
+                    subjectId: subjectId
                 });
                 
                 Swal.close();
                 
                 if (response && response.success) {
-                    const stats = response.data.stats || {
-                        present: 0,
-                        absent: 0,
-                        leave: 0,
-                        sick: 0,
-                        activity: 0
-                    };
-                    
-                    // แสดงสถิติ
-                    const statsContainer = document.getElementById('statsContainer');
-                    statsContainer.innerHTML = `
-                        <div class="stats-card" style="background: linear-gradient(135deg, #2ecc71, #27ae60);">
-                            <div class="stats-number">${stats.present}</div>
-                            <div class="stats-label">มาเรียน</div>
-                        </div>
-                        <div class="stats-card" style="background: linear-gradient(135deg, #e74c3c, #c0392b);">
-                            <div class="stats-number">${stats.absent}</div>
-                            <div class="stats-label">ขาดเรียน</div>
-                        </div>
-                        <div class="stats-card" style="background: linear-gradient(135deg, #9b59b6, #8e44ad);">
-                            <div class="stats-number">${stats.leave}</div>
-                            <div class="stats-label">ลากิจ</div>
-                        </div>
-                        <div class="stats-card" style="background: linear-gradient(135deg, #3498db, #2980b9);">
-                            <div class="stats-number">${stats.sick}</div>
-                            <div class="stats-label">ลาป่วย</div>
-                        </div>
-                        <div class="stats-card" style="background: linear-gradient(135deg, #f39c12, #e67e22);">
-                            <div class="stats-number">${stats.activity}</div>
-                            <div class="stats-label">กิจกรรม</div>
-                        </div>
-                    `;
-                    
-                    // สร้างกราฟ
-                    createChart(stats);
+                    const reportData = response.data;
+                    displayIndividualReport(reportData, startDate, endDate, classId, subjectId);
                     
                     Swal.fire('สำเร็จ', 'สร้างรายงานเรียบร้อยแล้ว', 'success');
                 } else {
@@ -1932,47 +1880,117 @@
             }
         }
 
-        function createChart(stats) {
-            const ctx = document.getElementById('attendanceChart').getContext('2d');
+        function displayIndividualReport(reportData, startDate, endDate, classId, subjectId) {
+            const container = document.getElementById('individualStatsContainer');
+            const className = systemData.classes.find(c => c.id == classId)?.name || '';
+            const subjectName = systemData.subjects.find(s => s.id == subjectId)?.name || '';
             
-            if (attendanceChart) {
-                attendanceChart.destroy();
+            if (!reportData.students || reportData.students.length === 0) {
+                container.innerHTML = `
+                    <div class="card">
+                        <h4>รายงานสถิติการเข้าเรียนรายบุคคล</h4>
+                        <p><strong>ห้องเรียน:</strong> ${className}</p>
+                        <p><strong>รายวิชา:</strong> ${subjectName}</p>
+                        <p><strong>ช่วงวันที่:</strong> ${formatDateThai(startDate)} - ${formatDateThai(endDate)}</p>
+                        <p style="color: #666; font-style: italic; text-align: center; margin-top: 20px;">
+                            ไม่พบข้อมูลการเข้าเรียนในช่วงวันที่ที่เลือก
+                        </p>
+                    </div>
+                `;
+                return;
             }
+
+            // คำนวณสถิติรวม
+            let totalPresent = 0, totalAbsent = 0, totalLeave = 0, totalSick = 0, totalActivity = 0;
             
-            attendanceChart = new Chart(ctx, {
-                type: 'doughnut',
-                data: {
-                    labels: ['มาเรียน', 'ขาดเรียน', 'ลากิจ', 'ลาป่วย', 'กิจกรรม'],
-                    datasets: [{
-                        data: [stats.present, stats.absent, stats.leave, stats.sick, stats.activity],
-                        backgroundColor: [
-                            '#2ecc71',
-                            '#e74c3c',
-                            '#9b59b6',
-                            '#3498db',
-                            '#f39c12'
-                        ],
-                        borderWidth: 2,
-                        borderColor: '#fff'
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: {
-                            position: 'bottom',
-                            labels: {
-                                font: {
-                                    family: 'Sarabun',
-                                    size: 14
-                                }
-                            }
-                        }
-                    }
-                }
+            reportData.students.forEach(student => {
+                totalPresent += student.stats.present;
+                totalAbsent += student.stats.absent;
+                totalLeave += student.stats.leave;
+                totalSick += student.stats.sick;
+                totalActivity += student.stats.activity;
             });
+
+            container.innerHTML = `
+                <div class="card">
+                    <h4>รายงานสถิติการเข้าเรียนรายบุคคล</h4>
+                    <p><strong>ห้องเรียน:</strong> ${className}</p>
+                    <p><strong>รายวิชา:</strong> ${subjectName}</p>
+                    <p><strong>ช่วงวันที่:</strong> ${formatDateThai(startDate)} - ${formatDateThai(endDate)}</p>
+                    <p><strong>จำนวนวันที่มีการบันทึก:</strong> ${reportData.totalDays} วัน</p>
+                    
+                    <!-- สถิติรวม -->
+                    <div style="margin: 20px 0;">
+                        <h5>สถิติรวมทั้งห้อง</h5>
+                        <div class="grid-3" style="margin-bottom: 20px;">
+                            <div class="stats-card" style="background: linear-gradient(135deg, #2ecc71, #27ae60);">
+                                <div class="stats-number">${totalPresent}</div>
+                                <div class="stats-label">มาเรียน</div>
+                            </div>
+                            <div class="stats-card" style="background: linear-gradient(135deg, #e74c3c, #c0392b);">
+                                <div class="stats-number">${totalAbsent}</div>
+                                <div class="stats-label">ขาดเรียน</div>
+                            </div>
+                            <div class="stats-card" style="background: linear-gradient(135deg, #9b59b6, #8e44ad);">
+                                <div class="stats-number">${totalLeave}</div>
+                                <div class="stats-label">ลากิจ</div>
+                            </div>
+                            <div class="stats-card" style="background: linear-gradient(135deg, #3498db, #2980b9);">
+                                <div class="stats-number">${totalSick}</div>
+                                <div class="stats-label">ลาป่วย</div>
+                            </div>
+                            <div class="stats-card" style="background: linear-gradient(135deg, #f39c12, #e67e22);">
+                                <div class="stats-number">${totalActivity}</div>
+                                <div class="stats-label">กิจกรรม</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- ตารางสถิติรายบุคคล -->
+                    <h5>สถิติรายบุคคล</h5>
+                    <div style="overflow-x: auto;">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>เลขที่</th>
+                                    <th>รหัสนักเรียน</th>
+                                    <th>ชื่อ-สกุล</th>
+                                    <th style="background: #2ecc71; color: white;">มาเรียน</th>
+                                    <th style="background: #e74c3c; color: white;">ขาดเรียน</th>
+                                    <th style="background: #9b59b6; color: white;">ลากิจ</th>
+                                    <th style="background: #3498db; color: white;">ลาป่วย</th>
+                                    <th style="background: #f39c12; color: white;">กิจกรรม</th>
+                                    <th>เปอร์เซ็นต์การมาเรียน</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${reportData.students.map(student => {
+                                    const total = student.stats.present + student.stats.absent + student.stats.leave + student.stats.sick + student.stats.activity;
+                                    const attendanceRate = total > 0 ? ((student.stats.present / total) * 100).toFixed(1) : '0.0';
+                                    const rateColor = attendanceRate >= 80 ? '#2ecc71' : attendanceRate >= 60 ? '#f39c12' : '#e74c3c';
+                                    
+                                    return `
+                                        <tr>
+                                            <td>${student.no}</td>
+                                            <td>${student.id}</td>
+                                            <td>${student.name}</td>
+                                            <td style="text-align: center; background: rgba(46, 204, 113, 0.1);">${student.stats.present}</td>
+                                            <td style="text-align: center; background: rgba(231, 76, 60, 0.1);">${student.stats.absent}</td>
+                                            <td style="text-align: center; background: rgba(155, 89, 182, 0.1);">${student.stats.leave}</td>
+                                            <td style="text-align: center; background: rgba(52, 152, 219, 0.1);">${student.stats.sick}</td>
+                                            <td style="text-align: center; background: rgba(243, 156, 18, 0.1);">${student.stats.activity}</td>
+                                            <td style="text-align: center; font-weight: 600; color: ${rateColor};">${attendanceRate}%</td>
+                                        </tr>
+                                    `;
+                                }).join('')}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            `;
         }
+
+
 
         // ฟังก์ชันสร้างรายงาน PDF
         async function generatePDFReport() {
@@ -2158,5 +2176,5 @@
             currentEdit = null;
         }
     </script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9769724826d0a1ae',t:'MTc1NjQ0MzIyNC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'976a5afa638ba192',t:'MTc1NjQ1Mjc1Ni4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
