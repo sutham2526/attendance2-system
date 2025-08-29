@@ -9,6 +9,7 @@
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <style>
         * {
             margin: 0;
@@ -637,31 +638,27 @@
             <div class="card">
                 <div class="card-header">
                     <i class="fas fa-search" style="background: linear-gradient(135deg, #fa709a, #fee140);"></i>
-                    <h3>ค้นหาประวัติการเข้าเรียน</h3>
+                    <h3>ประวัติการเข้าเรียน</h3>
                 </div>
                 
                 <div class="grid-3">
                     <div class="form-group">
                         <label class="form-label">วันที่</label>
-                        <input type="date" id="historyDate" class="form-control">
+                        <input type="date" id="historyDate" class="form-control" onchange="checkHistoryConditions()">
                     </div>
                     <div class="form-group">
                         <label class="form-label">ห้องเรียน</label>
-                        <select id="historyClass" class="form-control">
+                        <select id="historyClass" class="form-control" onchange="checkHistoryConditions()">
                             <option value="">เลือกห้องเรียน</option>
                         </select>
                     </div>
                     <div class="form-group">
                         <label class="form-label">รายวิชา</label>
-                        <select id="historySubject" class="form-control">
+                        <select id="historySubject" class="form-control" onchange="checkHistoryConditions()">
                             <option value="">เลือกรายวิชา</option>
                         </select>
                     </div>
                 </div>
-
-                <button class="btn btn-primary" onclick="searchHistory()" style="width: 100%; margin-bottom: 20px;">
-                    <i class="fas fa-search"></i> เรียกดูข้อมูล
-                </button>
 
                 <div id="historyResults"></div>
             </div>
@@ -687,20 +684,25 @@
                     <div class="form-group">
                         <label class="form-label">ห้องเรียน</label>
                         <select id="reportClass" class="form-control">
-                            <option value="">ทุกห้องเรียน</option>
+                            <option value="">เลือกห้องเรียน</option>
                         </select>
                     </div>
                     <div class="form-group">
                         <label class="form-label">รายวิชา</label>
                         <select id="reportSubject" class="form-control">
-                            <option value="">ทุกรายวิชา</option>
+                            <option value="">เลือกรายวิชา</option>
                         </select>
                     </div>
                 </div>
 
-                <button class="btn btn-primary" onclick="generateReport()" style="width: 100%; margin-bottom: 20px;">
-                    <i class="fas fa-chart-bar"></i> สร้างรายงาน
-                </button>
+                <div style="display: flex; gap: 10px; margin-bottom: 20px;">
+                    <button class="btn btn-primary" onclick="generateReport()" style="flex: 1;">
+                        <i class="fas fa-chart-bar"></i> สร้างรายงาน
+                    </button>
+                    <button class="btn btn-danger" onclick="generatePDFReport()" style="flex: 1;">
+                        <i class="fas fa-file-pdf"></i> สร้างรายงาน PDF
+                    </button>
+                </div>
 
                 <div id="reportResults">
                     <div class="grid-2">
@@ -1056,6 +1058,19 @@
                 loadStudentsForAttendance(classId);
             } else {
                 document.getElementById('studentsList').style.display = 'none';
+            }
+        }
+
+        // ฟังก์ชันตรวจสอบเงื่อนไขประวัติการเข้าเรียน
+        function checkHistoryConditions() {
+            const date = document.getElementById('historyDate').value;
+            const classId = document.getElementById('historyClass').value;
+            const subjectId = document.getElementById('historySubject').value;
+            
+            if (date && classId && subjectId) {
+                searchHistory();
+            } else {
+                document.getElementById('historyResults').innerHTML = '';
             }
         }
 
@@ -1943,6 +1958,207 @@
             });
         }
 
+        // ฟังก์ชันสร้างรายงาน PDF
+        async function generatePDFReport() {
+            const startDate = document.getElementById('reportStartDate').value;
+            const endDate = document.getElementById('reportEndDate').value;
+            const classId = document.getElementById('reportClass').value;
+            const subjectId = document.getElementById('reportSubject').value;
+            
+            if (!startDate || !endDate || !classId || !subjectId) {
+                Swal.fire('ข้อผิดพลาด', 'กรุณาเลือกข้อมูลให้ครบถ้วน (วันที่เริ่มต้น, วันที่สิ้นสุด, ห้องเรียน, และรายวิชา)', 'error');
+                return;
+            }
+            
+            try {
+                // แสดงการโหลด
+                Swal.fire({
+                    title: 'กำลังสร้างรายงาน PDF',
+                    text: 'กรุณารอสักครู่...',
+                    allowOutsideClick: false,
+                    didOpen: () => {
+                        Swal.showLoading();
+                    }
+                });
+                
+                // ดึงข้อมูลรายละเอียดการเข้าเรียน
+                const response = await sendToGoogleSheets({
+                    action: 'getDetailedReportData',
+                    startDate: startDate,
+                    endDate: endDate,
+                    classId: classId,
+                    subjectId: subjectId
+                });
+                
+                Swal.close();
+                
+                if (response && response.success) {
+                    const reportData = response.data;
+                    createPDFReport(reportData, startDate, endDate, classId, subjectId);
+                } else {
+                    throw new Error('Failed to get detailed report data');
+                }
+                
+            } catch (error) {
+                console.error('Error generating PDF report:', error);
+                Swal.fire('ข้อผิดพลาด', 'ไม่สามารถสร้างรายงาน PDF ได้ กรุณาลองใหม่', 'error');
+            }
+        }
+
+        function createPDFReport(reportData, startDate, endDate, classId, subjectId) {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF('l', 'mm', 'a4'); // landscape orientation
+            
+            // ข้อมูลพื้นฐาน
+            const className = systemData.classes.find(c => c.id == classId)?.name || '';
+            const subjectName = systemData.subjects.find(s => s.id == subjectId)?.name || '';
+            const students = reportData.students || [];
+            const dates = reportData.dates || [];
+            
+            // ตั้งค่าฟอนต์ (ใช้ฟอนต์พื้นฐานที่รองรับภาษาไทย)
+            doc.setFont('helvetica');
+            
+            // หัวเรื่อง
+            doc.setFontSize(16);
+            doc.text('รายงานการเข้าเรียน', 148, 20, { align: 'center' });
+            
+            doc.setFontSize(12);
+            doc.text(`ห้องเรียน: ${className}`, 20, 35);
+            doc.text(`รายวิชา: ${subjectName}`, 20, 45);
+            doc.text(`ช่วงวันที่: ${formatDateThai(startDate)} - ${formatDateThai(endDate)}`, 20, 55);
+            
+            // เตรียมข้อมูลตาราง
+            const tableStartY = 70;
+            const rowHeight = 8;
+            const colWidths = [15, 25, 60]; // เลขที่, รหัส, ชื่อ
+            const dateColWidth = 12; // ความกว้างของคอลัมน์วันที่
+            
+            // คำนวณความกว้างทั้งหมด
+            const totalFixedWidth = colWidths.reduce((sum, width) => sum + width, 0);
+            const availableWidth = 277 - totalFixedWidth - 20; // A4 landscape width - margins
+            const maxDateCols = Math.floor(availableWidth / dateColWidth);
+            
+            // แบ่งวันที่เป็นหน้า ๆ
+            const dateChunks = [];
+            for (let i = 0; i < dates.length; i += maxDateCols) {
+                dateChunks.push(dates.slice(i, i + maxDateCols));
+            }
+            
+            // สร้างตารางแต่ละหน้า
+            dateChunks.forEach((dateChunk, chunkIndex) => {
+                if (chunkIndex > 0) {
+                    doc.addPage();
+                    // หัวเรื่องหน้าใหม่
+                    doc.setFontSize(16);
+                    doc.text('รายงานการเข้าเรียน (ต่อ)', 148, 20, { align: 'center' });
+                    doc.setFontSize(12);
+                    doc.text(`ห้องเรียน: ${className}`, 20, 35);
+                    doc.text(`รายวิชา: ${subjectName}`, 20, 45);
+                }
+                
+                let currentY = tableStartY;
+                let currentX = 20;
+                
+                // วาดหัวตาราง
+                doc.setFontSize(10);
+                doc.setFont('helvetica', 'bold');
+                
+                // คอลัมน์คงที่
+                doc.rect(currentX, currentY, colWidths[0], rowHeight);
+                doc.text('เลขที่', currentX + colWidths[0]/2, currentY + 5, { align: 'center' });
+                currentX += colWidths[0];
+                
+                doc.rect(currentX, currentY, colWidths[1], rowHeight);
+                doc.text('รหัส', currentX + colWidths[1]/2, currentY + 5, { align: 'center' });
+                currentX += colWidths[1];
+                
+                doc.rect(currentX, currentY, colWidths[2], rowHeight);
+                doc.text('ชื่อ-สกุล', currentX + colWidths[2]/2, currentY + 5, { align: 'center' });
+                currentX += colWidths[2];
+                
+                // คอลัมน์วันที่
+                dateChunk.forEach(date => {
+                    doc.rect(currentX, currentY, dateColWidth, rowHeight);
+                    const dayMonth = formatDateShort(date);
+                    doc.text(dayMonth, currentX + dateColWidth/2, currentY + 5, { align: 'center' });
+                    currentX += dateColWidth;
+                });
+                
+                currentY += rowHeight;
+                
+                // วาดข้อมูลนักเรียน
+                doc.setFont('helvetica', 'normal');
+                students.forEach(student => {
+                    currentX = 20;
+                    
+                    // เลขที่
+                    doc.rect(currentX, currentY, colWidths[0], rowHeight);
+                    doc.text(student.no.toString(), currentX + colWidths[0]/2, currentY + 5, { align: 'center' });
+                    currentX += colWidths[0];
+                    
+                    // รหัสนักเรียน
+                    doc.rect(currentX, currentY, colWidths[1], rowHeight);
+                    doc.text(student.id, currentX + colWidths[1]/2, currentY + 5, { align: 'center' });
+                    currentX += colWidths[1];
+                    
+                    // ชื่อ-สกุล
+                    doc.rect(currentX, currentY, colWidths[2], rowHeight);
+                    doc.text(student.name, currentX + 2, currentY + 5);
+                    currentX += colWidths[2];
+                    
+                    // สถานะการเข้าเรียนในแต่ละวัน
+                    dateChunk.forEach(date => {
+                        doc.rect(currentX, currentY, dateColWidth, rowHeight);
+                        const attendance = student.attendance[date];
+                        if (attendance) {
+                            const statusSymbol = getStatusSymbol(attendance);
+                            doc.text(statusSymbol, currentX + dateColWidth/2, currentY + 5, { align: 'center' });
+                        }
+                        currentX += dateColWidth;
+                    });
+                    
+                    currentY += rowHeight;
+                });
+                
+                // เพิ่มคำอธิบาย
+                currentY += 10;
+                doc.setFontSize(8);
+                doc.text('สัญลักษณ์: / = มาเรียน, ข = ขาดเรียน, ล = ลากิจ, ป = ลาป่วย, ก = กิจกรรม', 20, currentY);
+            });
+            
+            // บันทึกไฟล์
+            const fileName = `รายงานการเข้าเรียน_${className}_${subjectName}_${startDate}_${endDate}.pdf`;
+            doc.save(fileName);
+            
+            Swal.fire('สำเร็จ', 'สร้างรายงาน PDF เรียบร้อยแล้ว', 'success');
+        }
+
+        function getStatusSymbol(status) {
+            const symbols = {
+                present: '/',
+                absent: 'ข',
+                leave: 'ล',
+                sick: 'ป',
+                activity: 'ก'
+            };
+            return symbols[status] || '';
+        }
+
+        function formatDateThai(dateString) {
+            const date = new Date(dateString);
+            const day = date.getDate().toString().padStart(2, '0');
+            const month = (date.getMonth() + 1).toString().padStart(2, '0');
+            const year = date.getFullYear();
+            return `${day}/${month}/${year}`;
+        }
+
+        function formatDateShort(dateString) {
+            const date = new Date(dateString);
+            const day = date.getDate().toString().padStart(2, '0');
+            const month = (date.getMonth() + 1).toString().padStart(2, '0');
+            return `${day}/${month}`;
+        }
+
         // ฟังก์ชัน Modal
         function saveEdit() {
             if (!currentEdit) return;
@@ -2008,5 +2224,5 @@
             currentEdit = null;
         }
     </script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'975fb71816a8c6e5',t:'MTc1NjM0MTE4NS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'97690d4d24c0a1ae',t:'MTc1NjQzOTA4OC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
