@@ -1086,7 +1086,7 @@
                 <div class="student-item">
                     <div class="student-info">
                         <div class="student-no">${student.no}</div>
-                        <div class="student-id">${student.id}</div>
+                        <div class="student-id">${student.displayId || student.id}</div>
                         <div class="student-name">${student.name}</div>
                     </div>
                     <div class="status-buttons">
@@ -1421,7 +1421,7 @@
                 <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px; border: 1px solid #ddd; border-radius: 8px; margin-bottom: 8px;">
                     <div>
                         <strong>${student.no}. ${student.name}</strong><br>
-                        <small>รหัส: ${student.id}</small>
+                        <small>รหัส: ${student.displayId || student.id}</small>
                     </div>
                     <div>
                         <button class="btn btn-warning" onclick="editStudent(${classId}, ${student.no})" style="margin-right: 5px; padding: 5px 10px;">
@@ -1740,26 +1740,26 @@
                             <p><strong>ห้องเรียน:</strong> ${className}</p>
                             <p><strong>รายวิชา:</strong> ${subjectName}</p>
                             
-                            <div class="grid-3" style="margin: 20px 0;">
-                                <div class="stats-card" style="background: linear-gradient(135deg, #2ecc71, #27ae60);">
-                                    <div class="stats-number">${statusCounts.present}</div>
-                                    <div class="stats-label">มาเรียน</div>
+                            <div style="display: flex; justify-content: center; gap: 15px; flex-wrap: wrap; margin: 20px 0;">
+                                <div style="background: linear-gradient(135deg, #2ecc71, #27ae60); color: white; text-align: center; padding: 12px 20px; border-radius: 12px; min-width: 100px;">
+                                    <div style="font-size: 1.8rem; font-weight: 700; margin-bottom: 3px;">${statusCounts.present}</div>
+                                    <div style="font-size: 0.9rem; opacity: 0.9;">มาเรียน</div>
                                 </div>
-                                <div class="stats-card" style="background: linear-gradient(135deg, #e74c3c, #c0392b);">
-                                    <div class="stats-number">${statusCounts.absent}</div>
-                                    <div class="stats-label">ขาดเรียน</div>
+                                <div style="background: linear-gradient(135deg, #e74c3c, #c0392b); color: white; text-align: center; padding: 12px 20px; border-radius: 12px; min-width: 100px;">
+                                    <div style="font-size: 1.8rem; font-weight: 700; margin-bottom: 3px;">${statusCounts.absent}</div>
+                                    <div style="font-size: 0.9rem; opacity: 0.9;">ขาดเรียน</div>
                                 </div>
-                                <div class="stats-card" style="background: linear-gradient(135deg, #9b59b6, #8e44ad);">
-                                    <div class="stats-number">${statusCounts.leave}</div>
-                                    <div class="stats-label">ลากิจ</div>
+                                <div style="background: linear-gradient(135deg, #9b59b6, #8e44ad); color: white; text-align: center; padding: 12px 20px; border-radius: 12px; min-width: 100px;">
+                                    <div style="font-size: 1.8rem; font-weight: 700; margin-bottom: 3px;">${statusCounts.leave}</div>
+                                    <div style="font-size: 0.9rem; opacity: 0.9;">ลากิจ</div>
                                 </div>
-                                <div class="stats-card" style="background: linear-gradient(135deg, #3498db, #2980b9);">
-                                    <div class="stats-number">${statusCounts.sick}</div>
-                                    <div class="stats-label">ลาป่วย</div>
+                                <div style="background: linear-gradient(135deg, #3498db, #2980b9); color: white; text-align: center; padding: 12px 20px; border-radius: 12px; min-width: 100px;">
+                                    <div style="font-size: 1.8rem; font-weight: 700; margin-bottom: 3px;">${statusCounts.sick}</div>
+                                    <div style="font-size: 0.9rem; opacity: 0.9;">ลาป่วย</div>
                                 </div>
-                                <div class="stats-card" style="background: linear-gradient(135deg, #f39c12, #e67e22);">
-                                    <div class="stats-number">${statusCounts.activity}</div>
-                                    <div class="stats-label">กิจกรรม</div>
+                                <div style="background: linear-gradient(135deg, #f39c12, #e67e22); color: white; text-align: center; padding: 12px 20px; border-radius: 12px; min-width: 100px;">
+                                    <div style="font-size: 1.8rem; font-weight: 700; margin-bottom: 3px;">${statusCounts.activity}</div>
+                                    <div style="font-size: 0.9rem; opacity: 0.9;">กิจกรรม</div>
                                 </div>
                             </div>
                             
@@ -1776,7 +1776,7 @@
                                     ${attendance.map(student => `
                                         <tr>
                                             <td>${student.no}</td>
-                                            <td>${student.studentId}</td>
+                                            <td>${student.displayId || student.studentId}</td>
                                             <td>${student.name}</td>
                                             <td>
                                                 <span style="padding: 5px 10px; border-radius: 15px; color: white; font-weight: 600; 
@@ -1922,26 +1922,26 @@
                     <!-- สถิติรวม -->
                     <div style="margin: 20px 0;">
                         <h5>สถิติรวมทั้งห้อง</h5>
-                        <div class="grid-3" style="margin-bottom: 20px;">
-                            <div class="stats-card" style="background: linear-gradient(135deg, #2ecc71, #27ae60);">
-                                <div class="stats-number">${totalPresent}</div>
-                                <div class="stats-label">มาเรียน</div>
+                        <div style="display: flex; justify-content: center; gap: 15px; flex-wrap: wrap; margin-bottom: 20px;">
+                            <div style="background: linear-gradient(135deg, #2ecc71, #27ae60); color: white; text-align: center; padding: 12px 20px; border-radius: 12px; min-width: 100px;">
+                                <div style="font-size: 1.8rem; font-weight: 700; margin-bottom: 3px;">${totalPresent}</div>
+                                <div style="font-size: 0.9rem; opacity: 0.9;">มาเรียน</div>
                             </div>
-                            <div class="stats-card" style="background: linear-gradient(135deg, #e74c3c, #c0392b);">
-                                <div class="stats-number">${totalAbsent}</div>
-                                <div class="stats-label">ขาดเรียน</div>
+                            <div style="background: linear-gradient(135deg, #e74c3c, #c0392b); color: white; text-align: center; padding: 12px 20px; border-radius: 12px; min-width: 100px;">
+                                <div style="font-size: 1.8rem; font-weight: 700; margin-bottom: 3px;">${totalAbsent}</div>
+                                <div style="font-size: 0.9rem; opacity: 0.9;">ขาดเรียน</div>
                             </div>
-                            <div class="stats-card" style="background: linear-gradient(135deg, #9b59b6, #8e44ad);">
-                                <div class="stats-number">${totalLeave}</div>
-                                <div class="stats-label">ลากิจ</div>
+                            <div style="background: linear-gradient(135deg, #9b59b6, #8e44ad); color: white; text-align: center; padding: 12px 20px; border-radius: 12px; min-width: 100px;">
+                                <div style="font-size: 1.8rem; font-weight: 700; margin-bottom: 3px;">${totalLeave}</div>
+                                <div style="font-size: 0.9rem; opacity: 0.9;">ลากิจ</div>
                             </div>
-                            <div class="stats-card" style="background: linear-gradient(135deg, #3498db, #2980b9);">
-                                <div class="stats-number">${totalSick}</div>
-                                <div class="stats-label">ลาป่วย</div>
+                            <div style="background: linear-gradient(135deg, #3498db, #2980b9); color: white; text-align: center; padding: 12px 20px; border-radius: 12px; min-width: 100px;">
+                                <div style="font-size: 1.8rem; font-weight: 700; margin-bottom: 3px;">${totalSick}</div>
+                                <div style="font-size: 0.9rem; opacity: 0.9;">ลาป่วย</div>
                             </div>
-                            <div class="stats-card" style="background: linear-gradient(135deg, #f39c12, #e67e22);">
-                                <div class="stats-number">${totalActivity}</div>
-                                <div class="stats-label">กิจกรรม</div>
+                            <div style="background: linear-gradient(135deg, #f39c12, #e67e22); color: white; text-align: center; padding: 12px 20px; border-radius: 12px; min-width: 100px;">
+                                <div style="font-size: 1.8rem; font-weight: 700; margin-bottom: 3px;">${totalActivity}</div>
+                                <div style="font-size: 0.9rem; opacity: 0.9;">กิจกรรม</div>
                             </div>
                         </div>
                     </div>
@@ -1972,7 +1972,7 @@
                                     return `
                                         <tr>
                                             <td>${student.no}</td>
-                                            <td>${student.id}</td>
+                                            <td>${student.displayId || student.id}</td>
                                             <td>${student.name}</td>
                                             <td style="text-align: center; background: rgba(46, 204, 113, 0.1);">${student.stats.present}</td>
                                             <td style="text-align: center; background: rgba(231, 76, 60, 0.1);">${student.stats.absent}</td>
@@ -2176,5 +2176,5 @@
             currentEdit = null;
         }
     </script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'976a5afa638ba192',t:'MTc1NjQ1Mjc1Ni4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9770c402543840a1',t:'MTc1NjUxOTk3Mi4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
